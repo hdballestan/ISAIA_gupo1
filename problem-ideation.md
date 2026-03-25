@@ -85,6 +85,55 @@ Asynchronous brainstorming to select the business problem the project will solve
    - Regulatory context: Law 769/2002 (National Traffic Code), Law 1843/2017, Constitutional Court rulings on due process.
 ---
 
+### Andrés
+
+## Project 1: Independent Contractor Social Security & Tax Compliance Engine (UGPP-Ready)
+
+### Overview
+Calculating social security contributions and taxes for independent contractors in Colombia is a significant administrative burden. The complexity arises from the 40% IBC (Income Base for Contributions) rule, varying ARL risk levels, and the specific deductible costs associated with different economic activities (CIIU codes).
+
+### The Problem
+Independent workers often miscalculate their contributions, leading to either overpayment or, more dangerously, severe financial penalties from the **UGPP** (*Unidad de Gestión Pensional y Parafiscales*) and the **DIAN**. There is no unified solution that connects a service contract’s value, the monthly invoice, and the exact generation of a PILA-ready liquidation.
+
+### Pain Point
+Contractors spend hours every month manually calculating "Net vs. Gross" income, trying to interpret the latest tax reforms, and fearing an audit because they cannot prove their cost deductions were legally applied under the "Presumptive Costs" scheme.
+
+### Actors
+* **Independent Contractors:** Users needing to calculate their monthly payments.
+* **Freelance Accountants:** Professionals managing multiple contractor portfolios.
+* **UGPP / DIAN:** Regulatory bodies (as the standard for compliance).
+* **Social Security Operators (PILA):** External systems where the final payment is executed.
+
+### Regulatory Context
+* **Law 1955 of 2019:** IBC calculation rules for independent workers.
+* **Decree 1601 of 2022:** New contribution standards for independents.
+* **Resolution 209 of 2020:** UGPP Presumptive Cost Scheme.
+* **Law 2277 of 2022:** Latest Colombian Tax Reform.
+
+---
+
+## Project 2: Public University "Gratuity Policy" Eligibility & Retention Auditor
+
+### Overview
+With the national implementation of the "Política de Gratuidad" (Zero Tuition), public universities face a massive administrative challenge: they must certify to the Ministry of Education (MEN) that every enrolled student meets strict socio-economic and academic criteria to receive state funding.
+
+### The Problem
+Verification is currently fragmented. Universities must cross-reference internal academic records with external databases (Sisbén IV, victim registries, and prior degree databases) to ensure a student isn't "double-dipping" or exceeding the allowed number of funded semesters. Failure to validate correctly results in the university losing the funding for that student.
+
+### Pain Point
+Manual auditing causes massive delays in enrollment cycles and high "financial desertion" risk. Furthermore, there is no automated system to predict which "Gratuity" students are at risk of losing their benefit due to academic failure, which would force them to pay out of pocket or drop out.
+
+### Actors
+* **University Registrars:** Administrators responsible for certifying students to the Ministry.
+* **Students:** Beneficiaries who need to track their eligibility status.
+* **Ministry of Education (MEN):** The funding entity.
+* **DNP (Sisbén) / ICETEX:** External data providers for socio-economic validation.
+
+### Regulatory Context
+* **Law 2307 of 2023:** Gratuity in Higher Education (Zero Tuition Law).
+* **Decree 1667 of 2021:** Establishment of the "Generación E" successor and gratuity rules.
+* **Law 1740 of 2014:** Inspection and oversight of Higher Education in Colombia.
+
 ## Decision
 
 - [ ] Vote / discussion pending — to be resolved by end of day **2026-03-24**
