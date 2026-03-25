@@ -74,13 +74,13 @@ Asynchronous brainstorming to select the business problem the project will solve
 
 1. **Public procurement opportunity matcher (SECOP 3.0.)**
    - Help independent contractors navigate the public procurement platform (SECOP II) by translating technical UNSPSC codes into natural language business categories. The system uses NLP to scan "Planes Anuales de Adquisiciones" and tender documents, alerting users about relevant opportunities and summarizing key requirements (budget, eligibility, deadlines) that match their profile.
- - **Pain point:** Small businesses miss out on government contracts because they cannot translate their commercial services into the specific technical codes used by the state, nor do they have time to read hundreds of complex PDF tender documents.
+  - **Pain point:** Small businesses miss out on government contracts because they cannot translate their commercial services into the specific technical codes used by the state, nor do they have time to read hundreds of complex PDF tender documents.
    - Actors: SMEs, independent contractors, Colombia Compra Eficiente, public entities.
    - Regulatory context: Law 80/1993 (Public Contracting Statute), Decree 1082/2015, SECOP II resolutions.
    
 2. **Traffic fine legality analyzer**
    - Assist citizens in verifying the validity of traffic tickets (comparendos) by analyzing scanned tickets against the National Traffic Code. Using OCR and rule-based AI, the tool detects procedural errors (e.g., wrong location, missing signatures, notification deadlines) and generates a draft appeal letter (recurso de reposición) based on valid legal arguments.
-   - **Pain point:** There is a significant information asymmetry; citizens are unaware of their legal rights and procedures, often paying unjust fines because they do not know how to identify formal errors in the ticket or how to formulate a legal defense.
+  - **Pain point:** There is a significant information asymmetry; citizens are unaware of their legal rights and procedures, often paying unjust fines because they do not know how to identify formal errors in the ticket or how to formulate a legal defense.
    - Actors: Drivers, Traffic Secretariats (local authorities), Ministry of Transport, Fondo de Prevención Vial.
    - Regulatory context: Law 769/2002 (National Traffic Code), Law 1843/2017, Constitutional Court rulings on due process.
 ---
