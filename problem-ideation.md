@@ -77,8 +77,6 @@ Asynchronous brainstorming to select the business problem the project will solve
  - **Pain point:** Small businesses miss out on government contracts because they cannot translate their commercial services into the specific technical codes used by the state, nor do they have time to read hundreds of complex PDF tender documents.
    - Actors: SMEs, independent contractors, Colombia Compra Eficiente, public entities.
    - Regulatory context: Law 80/1993 (Public Contracting Statute), Decree 1082/2015, SECOP II resolutions.
-
----
    
 2. **Traffic fine legality analyzer**
   - Assist citizens in verifying the validity of traffic tickets (comparendos) by analyzing scanned tickets against the National Traffic Code. Using OCR and rule-based AI, the tool detects procedural errors (e.g., wrong location, missing signatures, notification deadlines) and generates a draft appeal letter (recurso de reposición) based on valid legal arguments.
