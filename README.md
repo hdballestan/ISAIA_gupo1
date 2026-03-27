@@ -162,7 +162,7 @@ The system is composed of the following components (to be detailed later):
 2. [Ley 30/1992 — Higher Education](http://www.secretariasenado.gov.co/senado/basedoc/ley_0030_1992.html)
 3. Ley 1581/2012 — Habeas Data
 4. Ley 2307/2023 — Gratuidad
-5. [How SPADIES improved outcomes in Colombia (EconStor, 2021)](https://www.econstor.eu/handle/10419/233065)
+5. [How SPADIES improved outcomes in Colombia (EconStor, 2021)](https://www.econstor.eu/bitstream/10419/233065/1/1753935849.pdf)
 6. [LEE Informe N°74 — Deserción en Educación Superior (U. Javeriana, 2023, PDF)](https://www.javeriana.edu.co/recursosdb/5581483/8102914/INFORME-74-DESERCIO%CC%81N-EDU-SUPERIOR2023.pdf)
 
 [1]: https://www.mineducacion.gov.co/sistemasinfo/spadies/secciones/Estadisticas-de-desercion/
