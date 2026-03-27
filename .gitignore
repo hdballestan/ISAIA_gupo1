@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+venv/
+env/
+.venv/
+
+# ML / Data
+*.pkl
+*.joblib
+*.h5
+*.csv
+*.parquet
+data/
+models/
+notebooks/.ipynb_checkpoints/
+
+# Environment & secrets
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (dashboard frontend)
+node_modules/
+dist/
+.next/
+
+# CI/CD
+*.log
