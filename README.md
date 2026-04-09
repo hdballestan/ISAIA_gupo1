@@ -21,10 +21,11 @@ Proyecto: https://github.com/hdballestan/ISAIA_gupo1
 3. [Analisis de Requerimientos](#3-analisis-de-requerimientos)
 4. [Arquitectura y Diseno (Entrega 2 - 8 abr)](#4-arquitectura-y-diseno-entrega-2---8-abr)
 5. [Diseno Detallado del Software (Entrega 2 - 8 abr)](#5-diseno-detallado-del-software-entrega-2---8-abr)
-6. [Pruebas y Calidad (Entrega 3 - 15 abr)](#6-pruebas-y-calidad-entrega-3---15-abr)
-7. [Uso de IA Generativa (Entrega 4 - 22 abr)](#7-uso-de-ia-generativa-entrega-4---22-abr)
-8. [Consideraciones Eticas (Entrega 4 - 22 abr)](#8-consideraciones-eticas-entrega-4---22-abr)
-9. [Producto Final (25 abr)](#9-producto-final-25-abr)
+6. [Construccion y Codigo (Entrega 3 - 15 abr)](#6-construccion-y-codigo-entrega-3---15-abr)
+7. [Pruebas y Calidad (Entrega 3 - 15 abr)](#7-pruebas-y-calidad-entrega-3---15-abr)
+8. [Uso de IA Generativa (Entrega 4 - 22 abr)](#8-uso-de-ia-generativa-entrega-4---22-abr)
+9. [Consideraciones Eticas (Entrega 4 - 22 abr)](#9-consideraciones-eticas-entrega-4---22-abr)
+10. [Producto Final (25 abr)](#10-producto-final-25-abr)
 
 ---
 
@@ -201,7 +202,7 @@ Los portales existentes responden principalmente "como tramito este certificado"
 | RNF-07 | Cumplimiento de OWASP Top 10 como linea base de seguridad | Seguridad |
 | RNF-08 | Certificados agregables al catalogo sin modificar ni redesplegar codigo | Mantenibilidad |
 | RNF-09 | Formularios publicos con honeypot y rate limiting activos | Seguridad |
-| RNF-10 | Documentos subidos eliminados inmediatamente despues del procesamiento | Privacidad |
+| RNF-10 | Documentos del ciudadano procesados exclusivamente en el navegador (client-side); ningun archivo es transmitido ni almacenado en servidor | Privacidad |
 
 ### 3.3 Uso de IA Generativa en el Analisis
 
@@ -289,7 +290,6 @@ flowchart LR
   APIGW[API Gateway\nREST API]
   L[Lambda Python\nReglas y orquestacion]
   DDB[DynamoDB\nCertificate Catalog + Tickets + Status + RateLimit]
-  S3TMP[S3 Temporal\nDocumentos efimeros]
   S3RAG[S3 Knowledge Base\nMarkdown/JSON]
   COG[Cognito\nAuth + Roles]
   OAI[OpenAI API\nGPT-4o + Vision]
@@ -300,7 +300,6 @@ flowchart LR
   CDN --> APIGW
   APIGW --> L
   L --> DDB
-  L --> S3TMP
   L --> S3RAG
   L --> OAI
   CDN --> COG
@@ -311,16 +310,14 @@ flowchart LR
   CDK --> APIGW
   CDK --> L
   CDK --> DDB
-  CDK --> S3TMP
   CDK --> COG
 ```
 
 | Contenedor | Tecnologia | Responsabilidad |
 |---|---|---|
-| Frontend SPA | React + TypeScript | UI para consulta, carga de documentos, tablero personal y panel admin |
+| Frontend SPA | React + TypeScript | UI para consulta, carga de documentos, tablero personal y panel admin. Extrae texto de PDFs/archivos en el navegador antes de enviar al API |
 | API REST | API Gateway + Lambda (Python) | Reglas de negocio, validaciones y orquestacion de servicios |
 | Certificate Catalog | DynamoDB | Fuente de verdad de certificados, metadata y observaciones practicas |
-| Document Store | S3 temporal | Almacenamiento efimero y eliminacion posterior a procesamiento |
 | RAG Knowledge Base | S3 (Markdown/JSON) | Contexto complementario para prompts del asistente |
 | Auth | Cognito | Inicio de sesion, JWT y roles (publico/ciudadano/admin) |
 | CDN | CloudFront + S3 | Entrega del frontend y TLS |
@@ -351,7 +348,6 @@ flowchart TB
 
   QH --> DDB
   QH --> OAI
-  DX --> S3
   DX --> OAI
   DX --> DDB
   TH --> DDB
@@ -394,15 +390,14 @@ sequenceDiagram
   participant DDB as DynamoDB Catalogo
 
   Ciudadano->>Frontend: Sube PDF/imagen o pega texto
-  Frontend->>APIGW: POST /extract {file|text}
-  APIGW->>LambdaX: Invocacion
-  LambdaX->>S3: Guarda temporalmente (si aplica)
-  LambdaX->>OpenAI: Envia contenido (Vision o GPT-4o)
+  Note over Frontend: PDF/TXT/MD: extraccion de texto en el navegador (pdf.js)<br/>Imagen: convierte a base64 en el navegador<br/>El archivo original nunca sale del cliente
+  Frontend->>APIGW: POST /extract {text|base64, mimeType}
+  APIGW->>LambdaX: Invocacion con payload de texto o base64
+  LambdaX->>OpenAI: Envia contenido (Vision para imagen, GPT-4o para texto)
   OpenAI-->>LambdaX: Certificados identificados
   LambdaX->>DDB: Mapea certificados al catalogo
   DDB-->>LambdaX: Metadata completa
-  LambdaX->>S3: Elimina archivo temporal
-  LambdaX-->>Frontend: Guia orientativa
+  LambdaX-->>Frontend: Guia orientativa (nada persistido)
   Frontend-->>Ciudadano: Resultado renderizado
 ```
 
@@ -428,7 +423,6 @@ flowchart LR
   CF --> APIGW
   APIGW --> L
   L --> DDB
-  L --> S3T
   L --> OAI[OpenAI API Externo]
   CF --> COG
 ```
@@ -439,7 +433,7 @@ flowchart LR
 |---|---|---|
 | Serverless (FaaS) | Lambda + API Gateway | Reduce operacion para proyecto individual y alinea costos a uso real |
 | RAG | OpenAI + Catalogo | Permite actualizar conocimiento del catalogo sin reentrenar modelos |
-| Datos efimeros | S3 temporal para uploads | Minimiza retencion de datos conforme a Ley 1581/2012 |
+| Procesamiento en cliente | Texto extraido en navegador antes de enviar al API | Documentos del usuario nunca abandonan el dispositivo; cumplimiento Ley 1581/2012 sin dependencia de almacenamiento servidor |
 | CQRS ligero | Handlers de lectura separados de escritura | Claridad de responsabilidades y mejor control de permisos |
 | IaC | CDK TypeScript | Infraestructura reproducible, auditable y versionada |
 | Strangler Fig (futuro) | Catalogo manual a integraciones futuras | Facilita evolucion incremental sin rehacer frontend |
@@ -454,7 +448,7 @@ flowchart LR
 ### 4.9 Decisiones y trade-offs
 
 - Se eligio DynamoDB sobre PostgreSQL por integracion serverless y menor sobrecarga operativa. Limitacion aceptada: joins complejos no disponibles.
-- Se eligio retencion efimera de documentos sobre persistencia historica por minimizacion de datos (Ley 1581/2012). Limitacion aceptada: no hay reanalisis sin nueva carga.
+- Se eligio procesamiento client-side (pdf.js en navegador) sobre almacenamiento temporal en servidor por cumplimiento de Ley 1581/2012: el documento del ciudadano nunca abandona su dispositivo. Limitacion aceptada: el payload de texto/base64 que llega al API esta limitado a 6MB (API Gateway); documentos muy grandes deben ser divididos en el cliente.
 - Se eligio OpenAI Vision sobre OCR local dedicado para mantener una sola capa de IA multimodal. Limitacion aceptada: costo por imagen puede ser mayor.
 - Se eligio CDK sobre Terraform para coherencia en TypeScript con el resto del stack. Limitacion aceptada: mayor acoplamiento al ecosistema AWS.
 
@@ -504,7 +498,60 @@ flowchart LR
 | `TicketForm` | Solicitud de adicion con honeypot |
 | `ExportButton` | Generacion y descarga de PDF |
 
-### 5.4 Prompts base para OpenAI
+### 5.4 Diagrama de modulos
+
+```mermaid
+flowchart TB
+  subgraph Frontend
+    QA[QueryAssistant\nlenguaje natural → guia]
+    DU[DocumentUploader\npdf.js + base64 en cliente]
+    CL[CertificateList / Detail\nresultado + metadata]
+    UD[UserDashboard\nestado personal]
+    AP[AdminPanel\nCRUD catalogo + tickets]
+    TF[TicketForm\nhoneypot incluido]
+  end
+
+  subgraph API["API Lambda (Python)"]
+    AM2[AuthMiddleware\nJWT + RBAC]
+    QH2[QueryHandler\nRAG sobre catalogo]
+    DX2[DocumentExtractor\nOpenAI Vision / GPT-4o]
+    TH2[TicketHandler\nrate limit 1/IP/24h]
+    AH2[AdminHandler\nCRUD + moderacion]
+    US2[UserStatusHandler\nestado tramites]
+  end
+
+  subgraph Infra["Infraestructura"]
+    DDB2[(DynamoDB\nCertificate / Ticket / Status / RateLimit)]
+    S3R[(S3 RAG\nconocimiento complementario)]
+    OAI2[OpenAI API\nGPT-4o + Vision]
+    COG2[Cognito\nJWT]
+  end
+
+  QA --> QH2
+  DU --> DX2
+  CL --> QH2
+  UD --> US2
+  AP --> AH2
+  TF --> TH2
+
+  AM2 --> QH2
+  AM2 --> DX2
+  AM2 --> TH2
+  AM2 --> AH2
+  AM2 --> US2
+
+  QH2 --> DDB2
+  QH2 --> S3R
+  QH2 --> OAI2
+  DX2 --> OAI2
+  DX2 --> DDB2
+  TH2 --> DDB2
+  AH2 --> DDB2
+  US2 --> DDB2
+  AM2 --> COG2
+```
+
+### 5.5 Prompts base para OpenAI
 
 **System prompt - Query Handler**
 
@@ -537,7 +584,7 @@ Devuelve SOLO un JSON array. No inventes elementos no soportados por el texto.
 | CORS | Restringido al dominio del frontend |
 | Validacion de entrada | Esquemas tipados (Pydantic) antes de ejecutar logica |
 | Carga de archivos | Limite 10MB, MIME y extension permitidos |
-| Privacidad documental | Eliminacion de archivo temporal post-procesamiento |
+| Privacidad documental | Extraccion de texto en el navegador (pdf.js); solo texto o base64 llega al API; ningun documento del usuario se almacena en servidor |
 | Logging | Sin PII en CloudWatch |
 | Anti-bot | Honeypot en formulario de tickets |
 | Baseline OWASP | OWASP Top 10 como lista de verificacion base |
@@ -571,32 +618,38 @@ push -> main
 | Fase | Salida de la IA | Metodo de validacion | Estado |
 |---|---|---|---|
 | Fase 1 | Diagramas Mermaid (contexto, contenedores, secuencias, infraestructura) | Revisión manual de coherencia con procesos de seccion 1 | Validado |
-| Fase 2 | Propuesta de esquema DynamoDB y API REST | Revisión de trazabilidad contra RF esperados (RF-01..RF-14) | Validado con pendientes en seccion 3 |
+| Fase 2 | Propuesta de esquema DynamoDB y API REST | Revision de trazabilidad contra RF-01..RF-14 (seccion 3 completa) | Validado |
 | Fase 3 | Checklist inicial de seguridad | Contraste con RNF de privacidad, disponibilidad y seguridad | Validado |
 
 ---
 
-## 6. Pruebas y Calidad (Entrega 3 - 15 abr)
+## 6. Construccion y Codigo (Entrega 3 - 15 abr)
 
-> Marcador de posicion.
-
----
-
-## 7. Uso de IA Generativa (Entrega 4 - 22 abr)
-
-> Marcador de posicion.
+> Marcador de posicion. Se entregara el 15 de abril con: repositorio accesible, instrucciones de compilacion y ejecucion, historial de commits, dependencias y configuraciones gestionadas.
 
 ---
 
-## 8. Consideraciones Eticas (Entrega 4 - 22 abr)
+## 7. Pruebas y Calidad (Entrega 3 - 15 abr)
 
-> Marcador de posicion.
+> Marcador de posicion. Se entregara el 15 de abril con: estrategia de pruebas, cobertura unitaria e integracion, reporte de ejecucion y validacion de requisitos funcionales.
 
 ---
 
-## 9. Producto Final (25 abr)
+## 8. Uso de IA Generativa (Entrega 4 - 22 abr)
 
-> Marcador de posicion.
+> Marcador de posicion. Se entregara el 22 de abril con: estrategias de prompt engineering, evidencia de razonamiento asistido, evaluacion critica y prompts completos usados en el proyecto.
+
+---
+
+## 9. Consideraciones Eticas (Entrega 4 - 22 abr)
+
+> Marcador de posicion. Se entregara el 22 de abril con: analisis de riesgos y sesgos, uso responsable de datos, cumplimiento normativo y estrategias de mitigacion.
+
+---
+
+## 10. Producto Final (25 abr)
+
+> Marcador de posicion. Se entregara el 25 de abril con: software funcional desplegable, documentacion tecnica y funcional completa, y presentacion de 10 minutos.
 
 ---
 
@@ -612,8 +665,11 @@ push -> main
 ## Anexos
 
 - **Anexo A:** Prompt de reestructuracion (`.prompts/reestructuracion.md`).
-- **Anexo B:** Prompt de esta entrega (`.prompts/entrega_1_new.md`).
-- **Anexo C:** Prompt de arquitectura y diseno (`.prompts/entrega_2.md`).
-- **Anexo D:** Prompt de revision de rubrica [pendiente de documentacion].
-- **Anexo E:** Prompt de revision arquitectonica [pendiente de documentacion].
-- **Anexo F:** Prompt de revision de seguridad [pendiente de documentacion].
+- **Anexo B:** Prompt de Entrega 1 (`.prompts/entrega_1_new.md`).
+- **Anexo C:** Prompt de Entrega 2 — arquitectura y diseno (`.prompts/entrega_2.md`).
+
+### Correcciones y Revision
+
+- **Anexo C.1:** Revision de completitud del README (`.prompts/correcciones/revision_completitud_v1.md`) — checklist de secciones vacias, cobertura de rubrica, coherencia cruzada, notas pendientes y formato.
+- **Anexo C.2:** Revision contra rubrica (`.prompts/correcciones/revision_rubrica_v1.md`) — evaluacion criterio a criterio de Entregas 1 y 2 con estado CUBIERTO/PARCIAL/AUSENTE.
+- **Anexo C.3:** Decision de no almacenar documentos del usuario (`.prompts/correcciones/decision_no_almacenar_docs.md`) — procesamiento client-side con pdf.js; sin S3 temporal; fundamento en Ley 1581/2012.
