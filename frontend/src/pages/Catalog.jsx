@@ -15,7 +15,7 @@ function Catalog() {
     try {
       setLoading(true)
       const data = await getCertificates()
-      setCertificates(data || [])
+      setCertificates(data?.items || (Array.isArray(data) ? data : []))
     } catch (err) {
       setError(err.message)
     } finally {

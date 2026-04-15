@@ -1,41 +1,36 @@
 import * as pdfjsLib from 'pdfjs-dist'
+import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?raw'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+const workerBlob = new Blob([workerSrc], { type: 'application/javascript' })
+pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob)
 
-async function extractTextFromPage(page) {
-  const textContent = await page.getTextContent({
-    includeMarkedContent: false,
-    disableNormalization: false,
-  })
-
-  let fullText = ''
-  let lastY = null
-
-  for (const item of textContent.items) {
-    if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-      fullText += '\n'
-    }
-    fullText += item.str || ''
-    lastY = item.transform[5]
-  }
-
-  return fullText
+async function renderPageToBlob(page) {
+  const viewport = page.getViewport({ scale: 2.0 })
+  const canvas = document.createElement('canvas')
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
 }
 
 export async function extractPdfText(file) {
   try {
     const arrayBuffer = await file.arrayBuffer()
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
-    const pdf = await loadingTask.promise
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+    const { extractImageText } = await import('./ocr.js')
 
-    const textParts = []
+    const parts = []
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i)
-      const text = await extractTextFromPage(page)
-      textParts.push(text)
+      const blob = await renderPageToBlob(page)
+      const text = await extractImageText(blob)
+      parts.push(text)
+      window.dispatchEvent(
+        new CustomEvent('ocr-progress', { detail: { progress: i / pdf.numPages } })
+      )
     }
 
-    return textParts.join('\n\n')
+    return parts.join('\n\n')
   } catch (error) {
     throw new Error(`PDF error: ${error.message}`)
   }

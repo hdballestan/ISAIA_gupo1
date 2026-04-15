@@ -33,7 +33,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./data:/app/data
+      - ./data:/data
 
   frontend:
     build:

@@ -26,7 +26,7 @@ function DocumentUploader({ onExtracted }) {
   const loadCatalog = async () => {
     try {
       const data = await getCertificates()
-      setCatalog(data || [])
+      setCatalog(data?.items || (Array.isArray(data) ? data : []))
     } catch (err) {
       console.warn('No catalog loaded:', err.message)
     }

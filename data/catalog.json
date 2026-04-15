@@ -11,6 +11,8 @@
         "Resolución del captcha en el portal"
       ],
       "portal_url": "https://antecedentes.policia.gov.co:7005/WebJudicial/",
+      "portal_status": "disponible",
+      "portal_notes": "Captcha requerido. Puede presentar lentitud en horas pico.",
       "estimated_days": 0,
       "validity_days": 30,
       "is_mandatory_for_minors": false,
@@ -38,7 +40,9 @@
         "Número de cédula de ciudadanía",
         "Acceso a internet"
       ],
-      "portal_url": "https://www.procuraduria.gov.co/portal/Consulta-de-Procesos.page",
+      "portal_url": "https://www.procuraduria.gov.co/Pages/Generacion-de-antecedentes.aspx",
+      "portal_status": "disponible",
+      "portal_notes": "Acceso directo sin registro. Resultado inmediato.",
       "estimated_days": 0,
       "validity_days": 30,
       "is_mandatory_for_minors": false,
@@ -65,6 +69,8 @@
         "Acceso a internet"
       ],
       "portal_url": "https://www.contraloria.gov.co/web/cgr/certificado-de-antecedentes-fiscales",
+      "portal_status": "disponible",
+      "portal_notes": "Acceso directo por cédula o NIT.",
       "estimated_days": 0,
       "validity_days": 30,
       "is_mandatory_for_minors": false,
@@ -92,6 +98,8 @@
         "Acceso a internet"
       ],
       "portal_url": "https://www.icbf.gov.co/tramites-y-servicios/certificado-de-inhabilidades",
+      "portal_status": "disponible",
+      "portal_notes": "Obligatorio Ley 1918. Puede requerir VPN del empleador.",
       "estimated_days": 0,
       "validity_days": 30,
       "is_mandatory_for_minors": true,
@@ -122,6 +130,8 @@
         "Acceso a internet"
       ],
       "portal_url": "https://www.fiscalia.gov.co/colombia/servicios-ciudadanos/consultas/",
+      "portal_status": "disponible",
+      "portal_notes": "Distinto al de la Policía. Refleja condenas formales.",
       "estimated_days": 0,
       "validity_days": 30,
       "is_mandatory_for_minors": false,
@@ -148,6 +158,8 @@
         "Haber participado en las últimas elecciones"
       ],
       "portal_url": "https://wapp.registraduria.gov.co/-Certificado-Electoral-",
+      "portal_status": "disponible",
+      "portal_notes": "Solo disponible si votó en las últimas elecciones.",
       "estimated_days": 0,
       "validity_days": 1460,
       "is_mandatory_for_minors": false,
@@ -174,7 +186,9 @@
         "Correo electrónico registrado en la DIAN",
         "Acceso a internet"
       ],
-      "portal_url": "https://muisca.dian.gov.co/WebArquitectura/defIndex.faces",
+      "portal_url": "https://muisca.dian.gov.co/WebRutMuisca/DefSolicitaCopiaRUT.faces",
+      "portal_status": "disponible",
+      "portal_notes": "Requiere usuario registrado en MUISCA. Copia del RUT en PDF.",
       "estimated_days": 0,
       "validity_days": null,
       "is_mandatory_for_minors": false,
@@ -201,7 +215,9 @@
         "Cédula de ciudadanía",
         "Cuenta en el portal MUISCA de la DIAN"
       ],
-      "portal_url": "https://muisca.dian.gov.co/WebArquitectura/defIndex.faces",
+      "portal_url": "https://muisca.dian.gov.co/WebRutMuisca/DefSolicitaCopiaRUT.faces",
+      "portal_status": "disponible",
+      "portal_notes": "Requiere usuario MUISCA. Aplica si ingresos bajo el umbral.",
       "estimated_days": 0,
       "validity_days": 365,
       "is_mandatory_for_minors": false,
@@ -228,6 +244,8 @@
         "Documentos de situación militar según caso: primera clase, segunda clase o exención"
       ],
       "portal_url": "https://www.libretamilitar.mil.co/",
+      "portal_status": "disponible",
+      "portal_notes": "Solo hombres colombianos. Trámite puede ser presencial.",
       "estimated_days": 3,
       "validity_days": null,
       "is_mandatory_for_minors": false,
@@ -256,6 +274,8 @@
         "Acceso al portal de la EPS correspondiente"
       ],
       "portal_url": "https://www.adres.gov.co/BDUA/consulta-afiliados",
+      "portal_status": "disponible",
+      "portal_notes": "Certificado BDUA estándar. Gratuito sin registro.",
       "estimated_days": 0,
       "validity_days": 30,
       "is_mandatory_for_minors": false,
