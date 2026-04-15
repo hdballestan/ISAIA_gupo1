@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install backend dependencies
+        run: uv sync --frozen --dev
+      - name: Lint backend (flake8)
+        run: uv run flake8
+      - name: Test backend (pytest)
+        run: |
+          set +e
+          uv run pytest
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ] && [ "$code" -ne 5 ]; then
+            exit "$code"
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install frontend dependencies
+        run: npm install
+      - name: Lint frontend (eslint)
+        run: npm run lint
+      - name: Test frontend (vitest)
+        run: npm run test

@@ -1,0 +1,280 @@
+{
+  "certificates": [
+    {
+      "name": "Certificado de Antecedentes Judiciales",
+      "issuer": "Policía Nacional de Colombia",
+      "purposes": ["laboral", "educativo", "contratacion_publica", "personal"],
+      "legal_basis": ["Ley 1273/2009", "Decreto 019/2012"],
+      "requirements": [
+        "Número de cédula de ciudadanía",
+        "Acceso a internet",
+        "Resolución del captcha en el portal"
+      ],
+      "portal_url": "https://antecedentes.policia.gov.co:7005/WebJudicial/",
+      "estimated_days": 0,
+      "validity_days": 30,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Trámite 100% en línea y gratuito",
+        "El portal puede presentar captcha de difícil resolución",
+        "Disponible 24/7 salvo mantenimientos programados",
+        "El certificado se descarga en PDF inmediatamente"
+      ],
+      "regex_patterns": [
+        "antecedentes?\\s+judiciales?",
+        "certificado\\s+judicial",
+        "polic[ií]a\\s+nacional",
+        "record\\s+criminal",
+        "antecedentes?\\s+penales?\\s+polic"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado de Antecedentes Disciplinarios",
+      "issuer": "Procuraduría General de la Nación",
+      "purposes": ["laboral", "contratacion_publica", "educativo"],
+      "legal_basis": ["Ley 734/2002", "Decreto 019/2012"],
+      "requirements": [
+        "Número de cédula de ciudadanía",
+        "Acceso a internet"
+      ],
+      "portal_url": "https://www.procuraduria.gov.co/portal/Consulta-de-Procesos.page",
+      "estimated_days": 0,
+      "validity_days": 30,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Trámite 100% en línea y gratuito",
+        "Refleja sanciones disciplinarias de servidores públicos y particulares",
+        "Se obtiene de forma inmediata"
+      ],
+      "regex_patterns": [
+        "antecedentes?\\s+disciplinarios?",
+        "procuradur[ií]a",
+        "certificado\\s+disciplinario",
+        "sanciones?\\s+disciplinarias?"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado de Antecedentes Fiscales",
+      "issuer": "Contraloría General de la República",
+      "purposes": ["contratacion_publica", "laboral"],
+      "legal_basis": ["Ley 610/2000", "Decreto 019/2012"],
+      "requirements": [
+        "Número de cédula de ciudadanía o NIT",
+        "Acceso a internet"
+      ],
+      "portal_url": "https://www.contraloria.gov.co/web/cgr/certificado-de-antecedentes-fiscales",
+      "estimated_days": 0,
+      "validity_days": 30,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Obligatorio para contratación con el Estado",
+        "Trámite en línea y gratuito",
+        "Necesario para cargos en entidades públicas"
+      ],
+      "regex_patterns": [
+        "antecedentes?\\s+fiscales?",
+        "contralor[ií]a",
+        "certificado\\s+fiscal",
+        "responsabilidad\\s+fiscal"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado de Inhabilidades para Trabajo con Menores de Edad",
+      "issuer": "Instituto Colombiano de Bienestar Familiar (ICBF)",
+      "purposes": ["laboral", "educativo"],
+      "legal_basis": ["Ley 1918/2018"],
+      "requirements": [
+        "Número de cédula de ciudadanía",
+        "En algunos casos requiere VPN institucional del empleador",
+        "Acceso a internet"
+      ],
+      "portal_url": "https://www.icbf.gov.co/tramites-y-servicios/certificado-de-inhabilidades",
+      "estimated_days": 0,
+      "validity_days": 30,
+      "is_mandatory_for_minors": true,
+      "practical_notes": [
+        "Obligatorio por Ley 1918/2018 para cargos con menores de edad",
+        "Exigido en colegios, jardines, clubes deportivos y similares",
+        "Algunos empleadores requieren verificación con VPN institucional",
+        "Gratuito y en línea"
+      ],
+      "regex_patterns": [
+        "ley\\s*1918",
+        "inhabilidades?\\s+menores?",
+        "icbf",
+        "trabajo\\s+con\\s+menores?",
+        "registro\\s+inhabilitados?",
+        "bienestar\\s+familiar",
+        "menores?\\s+de\\s+edad.*certific"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado de Antecedentes Penales",
+      "issuer": "Fiscalía General de la Nación",
+      "purposes": ["laboral", "personal", "educativo"],
+      "legal_basis": ["Ley 906/2004", "Decreto 019/2012"],
+      "requirements": [
+        "Número de cédula de ciudadanía",
+        "Acceso a internet"
+      ],
+      "portal_url": "https://www.fiscalia.gov.co/colombia/servicios-ciudadanos/consultas/",
+      "estimated_days": 0,
+      "validity_days": 30,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Distinto al de la Policía Nacional: refleja condenas penales formales",
+        "Trámite en línea y gratuito",
+        "Puede tardar hasta 24 horas en algunos casos"
+      ],
+      "regex_patterns": [
+        "antecedentes?\\s+penales?\\s+fiscal",
+        "fiscal[ií]a",
+        "condena\\s+penal",
+        "antecedentes?.*fiscal[ií]a"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado Electoral",
+      "issuer": "Registraduría Nacional del Estado Civil",
+      "purposes": ["laboral", "personal"],
+      "legal_basis": ["Ley 403/1997", "Decreto 019/2012"],
+      "requirements": [
+        "Número de cédula de ciudadanía",
+        "Haber participado en las últimas elecciones"
+      ],
+      "portal_url": "https://wapp.registraduria.gov.co/-Certificado-Electoral-",
+      "estimated_days": 0,
+      "validity_days": 1460,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Algunos empleadores lo solicitan como beneficio para votar (descuentos en trámites)",
+        "Válido por el período entre elecciones (aprox. 4 años)",
+        "Se obtiene en línea de forma inmediata"
+      ],
+      "regex_patterns": [
+        "certificado\\s+electoral",
+        "registradur[ií]a",
+        "vot[ao]\\s+en\\s+elecciones?",
+        "sufragante"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Registro Único Tributario (RUT)",
+      "issuer": "Dirección de Impuestos y Aduanas Nacionales (DIAN)",
+      "purposes": ["laboral", "contratacion_publica", "personal"],
+      "legal_basis": ["Ley 863/2003", "Decreto 019/2012"],
+      "requirements": [
+        "Cédula de ciudadanía",
+        "Correo electrónico registrado en la DIAN",
+        "Acceso a internet"
+      ],
+      "portal_url": "https://muisca.dian.gov.co/WebArquitectura/defIndex.faces",
+      "estimated_days": 0,
+      "validity_days": null,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Documento obligatorio para personas naturales y jurídicas que realizan actividades económicas",
+        "Primera inscripción es gratuita y en línea",
+        "Actualizaciones también en línea sin costo"
+      ],
+      "regex_patterns": [
+        "rut\\b",
+        "registro\\s+[úu]nico\\s+tributario",
+        "dian",
+        "nit\\b",
+        "impuestos?\\s+nacionales?"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado de No Declarante de Renta",
+      "issuer": "Dirección de Impuestos y Aduanas Nacionales (DIAN)",
+      "purposes": ["laboral", "contratacion_publica", "personal"],
+      "legal_basis": ["Estatuto Tributario", "Decreto 019/2012"],
+      "requirements": [
+        "Cédula de ciudadanía",
+        "Cuenta en el portal MUISCA de la DIAN"
+      ],
+      "portal_url": "https://muisca.dian.gov.co/WebArquitectura/defIndex.faces",
+      "estimated_days": 0,
+      "validity_days": 365,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Solo aplica si los ingresos están por debajo del umbral de declaración",
+        "Gratuito en línea",
+        "Usado en contratación pública y algunos empleos formales"
+      ],
+      "regex_patterns": [
+        "no\\s+declarante\\s+de\\s+renta",
+        "declarante\\s+de\\s+renta",
+        "certific.*renta",
+        "impuesto\\s+de\\s+renta"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Libreta Militar",
+      "issuer": "Ejército Nacional de Colombia / Comando de Reclutamiento",
+      "purposes": ["laboral", "educativo", "personal"],
+      "legal_basis": ["Ley 48/1993"],
+      "requirements": [
+        "Cédula de ciudadanía (hombres colombianos)",
+        "Documentos de situación militar según caso: primera clase, segunda clase o exención"
+      ],
+      "portal_url": "https://www.libretamilitar.mil.co/",
+      "estimated_days": 3,
+      "validity_days": null,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Obligatoria para hombres colombianos mayores de 18 años",
+        "Primera clase: prestó servicio militar",
+        "Segunda clase: no prestó servicio pero tiene paz y salvo",
+        "Exención: médica u otras causales legales",
+        "Trámite presencial o en línea según caso"
+      ],
+      "regex_patterns": [
+        "libreta\\s+militar",
+        "situaci[oó]n\\s+militar",
+        "servicio\\s+militar",
+        "ej[eé]rcito\\s+nacional"
+      ],
+      "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado de Afiliación a Seguridad Social (EPS)",
+      "issuer": "Entidad Promotora de Salud (EPS) del afiliado",
+      "purposes": ["laboral", "personal"],
+      "legal_basis": ["Ley 100/1993", "Decreto 019/2012"],
+      "requirements": [
+        "Cédula de ciudadanía",
+        "Acceso al portal de la EPS correspondiente"
+      ],
+      "portal_url": "https://www.adres.gov.co/BDUA/consulta-afiliados",
+      "estimated_days": 0,
+      "validity_days": 30,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Se solicita directamente en la EPS o en el portal de la ADRES",
+        "Certificado BDUA (Base de Datos Única de Afiliados) es el estándar",
+        "Empleadores lo exigen para verificar cotización activa",
+        "Gratuito en línea"
+      ],
+      "regex_patterns": [
+        "eps\\b",
+        "afiliaci[oó]n.*salud",
+        "seguridad\\s+social",
+        "entidad\\s+promotora",
+        "adres",
+        "bdua",
+        "cotizante.*salud"
+      ],
+      "last_verified": "2026-04-01"
+    }
+  ]
+}

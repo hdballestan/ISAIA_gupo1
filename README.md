@@ -625,13 +625,148 @@ push -> main
 
 ## 6. Construccion y Codigo (Entrega 3 - 15 abr)
 
-> Marcador de posicion. Se entregara el 15 de abril con: repositorio accesible, instrucciones de compilacion y ejecucion, historial de commits, dependencias y configuraciones gestionadas.
+### 6.1 Estado actual de implementacion
+
+- Backend FastAPI con API versionada en `/api/v1`.
+- Frontend React + Vite con integracion a API real via `VITE_API_URL`.
+- Extraccion client-side de PDF e imagenes (pdf.js + Tesseract.js), sin enviar documentos originales al backend.
+- Seguridad base activa: JWT con expiracion de 60 minutos, CORS restringido por variable `FRONTEND_ORIGIN`, honeypot y rate limit en tickets.
+
+### 6.2 Dependencias y fuentes de verdad
+
+- Backend: `backend/pyproject.toml` + `backend/uv.lock` (gestion con `uv`).
+- Frontend: `frontend/package.json` (gestion con `npm`).
+- Variables de entorno documentadas en:
+  - `backend/.env.example`
+  - `frontend/.env.example`
+
+### 6.3 Ejecucion local con Docker Compose
+
+Requisito: Docker Desktop con `docker compose` habilitado.
+
+```bash
+docker compose up --build
+```
+
+Servicios:
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:8000`
+- Swagger: `http://localhost:8000/docs`
+- PostgreSQL: `localhost:5432`
+
+### 6.4 Ejecucion local sin Docker
+
+Backend:
+
+```bash
+cd backend
+uv sync --frozen --dev
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 6.5 Despliegue
+
+- Backend objetivo: Railway.
+- Frontend objetivo: Vercel.
+- Flujo de deploy automatizado configurado en `.github/workflows/deploy.yml`.
+- Trigger de deploy: manual (`workflow_dispatch`) o por tag `v*`.
+
+### 6.6 Contrato de API
+
+- Base path: `/api/v1`
+- Endpoints publicos clave:
+  - `GET /api/v1/certificates`
+  - `GET /api/v1/certificates/{id}`
+  - `POST /api/v1/extract`
+  - `POST /api/v1/tickets`
+  - `POST /api/v1/auth/register`
+  - `POST /api/v1/auth/login`
+- Endpoints admin (requieren rol `admin`):
+  - `GET /api/v1/admin/tickets`
+  - `PUT /api/v1/admin/tickets/{id}`
+  - `POST /api/v1/admin/certificates`
+  - `PUT /api/v1/admin/certificates/{id}`
+  - `DELETE /api/v1/admin/certificates/{id}`
+
+Esquema de error comun:
+
+```json
+{
+  "error": {
+    "code": "<status_code>",
+    "message": "mensaje",
+    "details": []
+  }
+}
+```
 
 ---
 
 ## 7. Pruebas y Calidad (Entrega 3 - 15 abr)
 
-> Marcador de posicion. Se entregara el 15 de abril con: estrategia de pruebas, cobertura unitaria e integracion, reporte de ejecucion y validacion de requisitos funcionales.
+### 7.1 Pipeline de CI
+
+Archivo: `.github/workflows/ci.yml`.
+
+Se ejecuta en cada `push` y `pull_request` con dos jobs:
+
+1. Backend
+   - `uv sync --frozen --dev`
+   - `uv run flake8`
+   - `uv run pytest`
+2. Frontend
+   - `npm install`
+   - `npm run lint` (eslint)
+   - `npm run test` (vitest)
+
+### 7.2 Estrategia de pruebas
+
+- Unitarias backend: servicio de matching (`app/services/matcher.py`).
+- Integracion backend: flujo de auth, permisos admin, rate limit y CRUD de certificados via API.
+- Unitarias frontend: `matchCertificates` en `frontend/src/utils/matcher.js`.
+- Funcionales frontend (smoke): render basico de componentes principales sin errores.
+- Cobertura objetivo: funciones criticas y validacion de requisitos funcionales; no se exige 100%.
+
+### 7.3 Criterios de calidad aplicados
+
+- Lint backend con flake8 (`max-line-length = 88`).
+- Lint frontend con eslint.
+- Pruebas backend con pytest.
+- Pruebas frontend con vitest.
+- Contrato de error uniforme en backend: `{ "error": { "code", "message", "details" } }`.
+
+### 7.4 Evidencia de ejecucion
+
+Comandos usados para evidencia local:
+
+```bash
+cd backend
+uv run pytest
+
+cd ../frontend
+npm run test
+```
+
+Resultados obtenidos (ejecución local 2026-04-14):
+
+- `pytest`: 6 tests aprobados.
+- `vitest`: 4 tests aprobados en 2 archivos.
+- `flake8`: sin errores tras configurar `backend/.flake8`.
+- `eslint`: sin errores (`npm run lint`).
+
+### 7.5 Notas de verificacion
+
+- El pipeline de deploy no se ejecuta por cada push a `main`.
+- El deploy solo se dispara manualmente o por versionado con tags.
 
 ---
 
