@@ -11,8 +11,7 @@ function Layout() {
           </div>
           <nav className="nav">
             <Link to="/">Inicio</Link>
-            <Link to="/extract">Extraer</Link>
-            <Link to="/catalog">Catálogo</Link>
+            <Link to="/extract">Certificados</Link>
             <Link to="/admin">Admin</Link>
             <Link to="/login">Acceder</Link>
           </nav>

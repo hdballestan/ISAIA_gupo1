@@ -12,8 +12,21 @@ async function apiFetch(path, options = {}) {
   return response.json()
 }
 
+async function fetchWithRetry(path, options = {}, retries = 1, delayMs = 1000) {
+  try {
+    return await apiFetch(path, options)
+  } catch (err) {
+    const isRetryable = err.message.includes('502') || err.message.includes('503')
+    if (retries > 0 && isRetryable) {
+      await new Promise((r) => setTimeout(r, delayMs))
+      return fetchWithRetry(path, options, retries - 1, delayMs)
+    }
+    throw err
+  }
+}
+
 export function getCertificates() {
-  return apiFetch('/certificates')
+  return fetchWithRetry('/certificates')
 }
 
 export function getCertificateById(id) {

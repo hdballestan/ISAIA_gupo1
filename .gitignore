@@ -45,3 +45,7 @@ dist/
 
 # CI/CD
 *.log
+
+# Tesseract assets (generados por postinstall)
+frontend/public/tesseract/
+frontend/public/pdf.worker.min.js

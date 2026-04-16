@@ -1,29 +1,67 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DocumentUploader from '../components/DocumentUploader'
-import CertificateList from '../components/CertificateList'
+import CertificateTable from '../components/CertificateTable'
+import { getCertificates } from '../services/api'
+import { checkCatalogHealth } from '../services/health'
+
+function ExtractSummary({ extracted, count }) {
+  if (!extracted) return null
+  if (count > 0) {
+    return (
+      <div className="extract-summary extract-summary--found">
+        {count} certificado{count !== 1 ? 's' : ''} encontrado{count !== 1 ? 's' : ''} en el documento
+      </div>
+    )
+  }
+  return (
+    <div className="extract-summary extract-summary--empty">
+      No se encontraron certificados en el documento
+    </div>
+  )
+}
 
 function Extract() {
-  const [results, setResults] = useState([])
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [catalog, setCatalog] = useState([])
+  const [matchedIds, setMatchedIds] = useState(new Set())
+  const [extracted, setExtracted] = useState(false)
+  const [healthMap, setHealthMap] = useState({})
+  const [catalogError, setCatalogError] = useState(null)
 
-  const handleDocumentExtracted = (certificates) => {
-    setResults(certificates)
-    setIsProcessing(false)
+  useEffect(() => {
+    getCertificates()
+      .then((data) => {
+        const items = data?.items || (Array.isArray(data) ? data : [])
+        setCatalog(items)
+        checkCatalogHealth(items).then(setHealthMap)
+      })
+      .catch((err) => setCatalogError(err.message))
+  }, [])
+
+  const handleExtracted = (matches) => {
+    setMatchedIds(new Set(matches.map((m) => m.id)))
+    setExtracted(true)
   }
 
   return (
     <div className="page-extract">
-      <h2>Extraer Certificados</h2>
-      <p>Carga un documento (PDF, imagen o texto) para identificar certificados.</p>
+      <h2>CertiDoc</h2>
+      <p>Carga un documento para identificar certificados colombianos.</p>
 
-      <DocumentUploader onExtracted={handleDocumentExtracted} />
+      <DocumentUploader catalog={catalog} onExtracted={handleExtracted} />
 
-      {results.length > 0 && (
-        <div className="results-section">
-          <h3>Certificados Encontrados</h3>
-          <CertificateList certificates={results} />
-        </div>
+      <ExtractSummary extracted={extracted} count={matchedIds.size} />
+
+      {catalogError && (
+        <p style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-md)' }}>
+          No se pudo cargar el catálogo: {catalogError}
+        </p>
       )}
+
+      <CertificateTable
+        certificates={catalog}
+        matchedIds={matchedIds}
+        healthMap={healthMap}
+      />
     </div>
   )
 }
