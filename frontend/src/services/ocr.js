@@ -3,7 +3,7 @@ import Tesseract from 'tesseract.js'
 const OCR_OPTIONS = {
   workerPath: '/tesseract/worker.min.js',
   corePath: '/tesseract/',
-  langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+  langPath: '/tesseract/lang',
   workerBlobURL: false,
 }
 

@@ -254,372 +254,102 @@ Prompts de revision aplicados para verificar coherencia interna, cobertura de ru
 
 ---
 
-## 4. Arquitectura y Diseno (Entrega 2 - 8 abr)
+## 4. Arquitectura y Diseño (Entrega 3 - 17 abr)
 
-> Esta seccion implementa la arquitectura de Entrega 2 sin repetir la definicion del problema, actores y procesos de las secciones 1 a 3.
+> Arquitectura simplificada implementada en Entrega 3. El stack original de Entrega 2 (AWS Lambda, DynamoDB, CDK, Cognito) fue reemplazado por FastAPI + PostgreSQL + Docker Compose para acelerar desarrollo individual. Consultar `.prompts/discusion/cambios_entrega_3.md` para decisiones.
 
-### 4.1 Vista de contexto (C4 Nivel 1)
+### 4.1 Vista de contexto simplificada
 
 ```mermaid
 flowchart LR
   C[Ciudadano]
-  E[Empleador / Institucion Educativa]
   A[Administrador]
+  S[CertiDoc\nPortal Unificado]
+  P[Portales oficiales\nPolicia / Procuraduria / ICBF / Fiscalia]
+  DB[(PostgreSQL\nCatálogo + Tickets)]
 
-  S[CertiDoc\nPortal Unificado de Gestion de Certificados]
-
-  P[Portales entidades emisoras\nPolicia / Procuraduria / ICBF / Fiscalia]
-  O[OpenAI API\nGPT-4o + Vision]
-  W[AWS Cloud\nHosting, Compute, Storage, Auth]
-
-  C -->|Consulta, extraccion, estado de tramites| S
-  E -->|Consulta certificados requeridos| S
-  A -->|CRUD catalogo y moderacion tickets| S
-
-  S -->|Entrega URLs y metadatos de tramite| P
-  S -->|RAG y extraccion documental| O
-  S -->|Despliegue y operacion| W
+  C -->|Extrae certificados<br/>Consulta catálogo| S
+  A -->|Gestiona catálogo<br/>Modera tickets| S
+  S -->|Entrega URLs| P
+  S -->|Lee/escribe| DB
 ```
 
-### 4.2 Vista de contenedores (C4 Nivel 2)
+### 4.2 Vista de contenedores
 
 ```mermaid
 flowchart LR
-  U[Usuarios: Ciudadano / Empleador / Admin]
-  CDN[CloudFront + S3\nFrontend SPA React + TypeScript]
-  APIGW[API Gateway\nREST API]
-  L[Lambda Python\nReglas y orquestacion]
-  DDB[DynamoDB\nCertificate Catalog + Tickets + Status + RateLimit]
-  S3RAG[S3 Knowledge Base\nMarkdown/JSON]
-  COG[Cognito\nAuth + Roles]
-  OAI[OpenAI API\nGPT-4o + Vision]
-  GHA[GitHub Actions\nCI/CD]
-  CDK[AWS CDK TypeScript\nIaC]
+  U[Usuario]
+  FE[React + Vite<br/>Vercel / localhost:5173]
+  BE[FastAPI<br/>Railway / uvicorn:8000]
+  DB[(PostgreSQL<br/>Railway / localhost:5432)]
 
-  U --> CDN
-  CDN --> APIGW
-  APIGW --> L
-  L --> DDB
-  L --> S3RAG
-  L --> OAI
-  CDN --> COG
-  APIGW --> COG
+  U -->|Browser| FE
+  FE -->|HTTP REST| BE
+  BE -->|SQL| DB
 
-  GHA --> CDK
-  CDK --> CDN
-  CDK --> APIGW
-  CDK --> L
-  CDK --> DDB
-  CDK --> COG
+  Note: pdf.js + Tesseract.js en navegador<br/>OCR client-side, sin enviar documentos
 ```
 
-| Contenedor | Tecnologia | Responsabilidad |
+| Componente | Tecnología | Responsabilidad |
 |---|---|---|
-| Frontend SPA | React + TypeScript | UI para consulta, carga de documentos, tablero personal y panel admin. Extrae texto de PDFs/archivos en el navegador antes de enviar al API |
-| API REST | API Gateway + Lambda (Python) | Reglas de negocio, validaciones y orquestacion de servicios |
-| Certificate Catalog | DynamoDB | Fuente de verdad de certificados, metadata y observaciones practicas |
-| RAG Knowledge Base | S3 (Markdown/JSON) | Contexto complementario para prompts del asistente |
-| Auth | Cognito | Inicio de sesion, JWT y roles (publico/ciudadano/admin) |
-| CDN | CloudFront + S3 | Entrega del frontend y TLS |
-| CI/CD | GitHub Actions | Lint, type-check, test, synth y despliegue |
-| IaC | CDK (TypeScript) | Infraestructura reproducible y versionada |
+| Frontend | React + Vite | Extracción PDF/imagen, formularios, tabla certificados, panel admin |
+| Backend | FastAPI (Python) | API REST, CRUD catálogo, rate limit, auth JWT |
+| Base de datos | PostgreSQL | Certificados, usuarios, tickets, rate limits |
+| Despliegue | Docker Compose (dev), Railway + Vercel (prod) | Reproducibilidad y escalabilidad sin overhead |
 
-### 4.3 Vista de componentes (C4 Nivel 3) - API Lambda
+### 4.3 Flujos principales
 
-```mermaid
-flowchart TB
-  GW[API Gateway]
-  AM[Auth Middleware]
-  QH[Query Handler]
-  DX[Document Extractor]
-  TH[Ticket Handler]
-  AH[Admin Handler]
-  US[User Status Handler]
-  DDB[DynamoDB]
-  S3[S3 Temporal]
-  OAI[OpenAI API]
+**Extracción de certificados:**
+1. Usuario sube PDF/imagen o pega texto → FE extrae con pdf.js/Tesseract.js
+2. FE envía texto/base64 a `POST /api/v1/extract`
+3. BE hace regex matching contra catálogo PostgreSQL
+4. FE renderiza matches en tabla, resaltando certificados encontrados
 
-  GW --> AM
-  AM --> QH
-  AM --> DX
-  AM --> TH
-  AM --> AH
-  AM --> US
-
-  QH --> DDB
-  QH --> OAI
-  DX --> OAI
-  DX --> DDB
-  TH --> DDB
-  AH --> DDB
-  US --> DDB
+**Health check de portales:**
+```bash
+# En el navegador, cada 10 minutos
+curl -I https://portal-oficial.gov.co
+# HEAD no-cors → respuesta opaca = "Funcionando"
+#              → network error = "Sin acceso"
 ```
 
-### 4.4 Flujo RAG (secuencia)
+Resultado guardado en tabla con timestamp "Última consulta: HH:MM".
 
-```mermaid
-sequenceDiagram
-  actor Ciudadano
-  participant Frontend
-  participant APIGW as API Gateway
-  participant LambdaQ as Lambda Query Handler
-  participant DDB as DynamoDB Catalogo
-  participant OpenAI as OpenAI GPT-4o
+### 4.4 Decisiones arquitectónicas
 
-  Ciudadano->>Frontend: "necesito papeles para trabajar en un colegio"
-  Frontend->>APIGW: POST /query {text}
-  APIGW->>LambdaQ: Invocacion
-  LambdaQ->>DDB: Query por proposito laboral-educativo-menores
-  DDB-->>LambdaQ: Certificados candidatos
-  LambdaQ->>OpenAI: Prompt con catalogo + reglas + consulta
-  OpenAI-->>LambdaQ: Respuesta orientativa
-  LambdaQ-->>Frontend: Lista formateada con metadata
-  Frontend-->>Ciudadano: Guia orientativa renderizada
-```
+| Decisión | Anterior | Actual | Razón |
+|---|---|---|---|
+| Backend | AWS Lambda + API Gateway | FastAPI | Debugging simple, sin cold starts |
+| Base de datos | DynamoDB | PostgreSQL | SQL estándar, joins, migraciones |
+| Auth | Cognito | JWT + bcrypt | Control total, sin deps AWS |
+| Frontend hosting | S3 + CloudFront | Vercel | Deploy automático |
+| OCR | OpenAI Vision | Tesseract.js client-side | Sin costo de tokens, privacidad |
+| Identificación certs | OpenAI RAG | Regex sobre catálogo | Costo 0, predecible, actualizablo sin redeploy |
+| IaC | CDK TypeScript | Docker Compose | Ligero, reproducible |
 
-### 4.5 Flujo de extraccion documental (secuencia)
+### 4.5 Principios de diseño aplicados
 
-```mermaid
-sequenceDiagram
-  actor Ciudadano
-  participant Frontend
-  participant APIGW as API Gateway
-  participant LambdaX as Lambda Document Extractor
-  participant S3 as S3 Temporal
-  participant OpenAI as OpenAI GPT-4o/Vision
-  participant DDB as DynamoDB Catalogo
-
-  Ciudadano->>Frontend: Sube PDF/imagen o pega texto
-  Note over Frontend: PDF/TXT/MD: extraccion de texto en el navegador (pdf.js)<br/>Imagen: convierte a base64 en el navegador<br/>El archivo original nunca sale del cliente
-  Frontend->>APIGW: POST /extract {text|base64, mimeType}
-  APIGW->>LambdaX: Invocacion con payload de texto o base64
-  LambdaX->>OpenAI: Envia contenido (Vision para imagen, GPT-4o para texto)
-  OpenAI-->>LambdaX: Certificados identificados
-  LambdaX->>DDB: Mapea certificados al catalogo
-  DDB-->>LambdaX: Metadata completa
-  LambdaX-->>Frontend: Guia orientativa (nada persistido)
-  Frontend-->>Ciudadano: Resultado renderizado
-```
-
-### 4.6 Arquitectura de infraestructura AWS
-
-```mermaid
-flowchart LR
-  GH[GitHub Repo] --> GHA[GitHub Actions]
-  GHA --> CDK[CDK Deploy]
-  CDK --> AWS[AWS Account]
-
-  subgraph AWS
-    CF[CloudFront]
-    S3F[S3 Frontend SPA]
-    APIGW[API Gateway]
-    L[Lambda Python]
-    DDB[DynamoDB]
-    S3T[S3 Temporal Docs]
-    COG[Cognito]
-  end
-
-  CF --> S3F
-  CF --> APIGW
-  APIGW --> L
-  L --> DDB
-  L --> OAI[OpenAI API Externo]
-  CF --> COG
-```
-
-### 4.7 Principios y patrones arquitectonicos
-
-| Principio / Patron | Aplicacion | Justificacion |
-|---|---|---|
-| Serverless (FaaS) | Lambda + API Gateway | Reduce operacion para proyecto individual y alinea costos a uso real |
-| RAG | OpenAI + Catalogo | Permite actualizar conocimiento del catalogo sin reentrenar modelos |
-| Procesamiento en cliente | Texto extraido en navegador antes de enviar al API | Documentos del usuario nunca abandonan el dispositivo; cumplimiento Ley 1581/2012 sin dependencia de almacenamiento servidor |
-| CQRS ligero | Handlers de lectura separados de escritura | Claridad de responsabilidades y mejor control de permisos |
-| IaC | CDK TypeScript | Infraestructura reproducible, auditable y versionada |
-| Strangler Fig (futuro) | Catalogo manual a integraciones futuras | Facilita evolucion incremental sin rehacer frontend |
-| Trunk-based development | Rama principal con cambios pequenos | Simplifica CI/CD en contexto individual |
-
-### 4.8 Uso justificado de LLM / RAG
-
-- RAG se prioriza sobre fine-tuning porque el catalogo cambia con frecuencia y debe actualizarse sin reentrenamiento.
-- OpenAI GPT-4o se prioriza sobre modelo local por Vision integrado y menor carga operativa; Claude Code se mantiene para desarrollo.
-- Limitaciones aceptadas: latencia 2-5s por consulta, costo por token y riesgo de alucinacion mitigado con prompt restrictivo y validacion contra catalogo.
-
-### 4.9 Decisiones y trade-offs
-
-- Se eligio DynamoDB sobre PostgreSQL por integracion serverless y menor sobrecarga operativa. Limitacion aceptada: joins complejos no disponibles.
-- Se eligio procesamiento client-side (pdf.js en navegador) sobre almacenamiento temporal en servidor por cumplimiento de Ley 1581/2012: el documento del ciudadano nunca abandona su dispositivo. Limitacion aceptada: el payload de texto/base64 que llega al API esta limitado a 6MB (API Gateway); documentos muy grandes deben ser divididos en el cliente.
-- Se eligio OpenAI Vision sobre OCR local dedicado para mantener una sola capa de IA multimodal. Limitacion aceptada: costo por imagen puede ser mayor.
-- Se eligio CDK sobre Terraform para coherencia en TypeScript con el resto del stack. Limitacion aceptada: mayor acoplamiento al ecosistema AWS.
+| Principio | Aplicación |
+|---|---|
+| Procesamiento en cliente | PDF, OCR e imagen se extraen en el navegador (pdf.js + Tesseract.js). Documentos nunca salen del dispositivo → cumplimiento Ley 1581/2012 |
+| Catálogo centralizado | PostgreSQL es fuente única de verdad. Regex matching es predecible y no requiere reentrenamiento |
+| Simplicidad operativa | FastAPI + PostgreSQL = menos dependencias, debugging directo, escalabilidad lineal |
+| Seguridad por defecto | Rate limiting, JWT con expiracion, CORS restrictivo, validacion entrada con Pydantic |
+| Health checks periódicos | Cliente ejecuta HEAD requests cada 10 minutos a portales; timestamp visible → usuario sabe cuándo fue la última consulta |
 
 ---
 
-## 5. Diseno Detallado del Software (Entrega 2 - 8 abr)
+## 5. Diseño Detallado del Software (DIFERIDO — Entrega 4)
 
-### 5.1 Modelo de datos (DynamoDB)
+> **Estado:** Pendiente refactorización. El stack simplificado en Entrega 3 cambió significativamente el modelo de datos (DynamoDB → PostgreSQL), componentes (Lambda → FastAPI), y flujos (RAG → Regex). Esta sección será reescrita en Entrega 4 con:
+> - Modelo PostgreSQL actualizado (tablas `certificates`, `users`, `tickets`)
+> - API REST real implementada (endpoints actuales en sección 6.6)
+> - Componentes frontend reales (DocumentUploader, CertificateTable, AdminPanel, etc.)
+> - Ausencia de OpenAI (solo regex matching) y procesamiento 100% client-side
+>
+> **Razón de diferimiento:** Alcance de tiempo en Entrega 3 priorizó funcionalidad sobre documentación detallada. El código es más simple que lo documentado aquí; una refactorización prematura sería imprecisa.
 
-| Entidad | Clave DynamoDB | Campos principales |
-|---|---|---|
-| `Certificate` | `PK: CERT#<id>`, `SK: METADATA` | `name`, `issuer`, `purposes[]`, `legalBasis[]`, `requirements[]`, `portalUrl`, `estimatedDays`, `validityDays`, `isMandatoryForMinors`, `practicalNotes[]`, `lastVerified` |
-| `TicketRequest` | `PK: TICKET#<id>`, `SK: METADATA` | `description`, `submitterIp`, `status`, `adminNotes`, `createdAt`, `resolvedAt` |
-| `UserCertificateStatus` | `PK: USER#<userId>`, `SK: CERT#<certId>` | `status`, `obtainedDate`, `expirationDate` |
-| `RateLimitEntry` | `PK: RATELIMIT#<ip>`, `SK: TICKET` | `lastSubmission`, `ttl` |
-
-### 5.2 Diseno de API REST
-
-| Metodo | Ruta | Descripcion | Auth | Rol |
-|---|---|---|---|---|
-| POST | /query | Consulta en lenguaje natural y guia orientativa | No | Publico |
-| POST | /extract | Extraccion desde documento/texto | No | Publico |
-| GET | /certificates | Lista paginada del catalogo | No | Publico |
-| GET | /certificates/{id} | Detalle de certificado | No | Publico |
-| POST | /tickets | Solicitud de nuevo tramite (rate limited) | No | Publico |
-| GET | /me/certificates | Estado personal de tramites | Si | Ciudadano |
-| PUT | /me/certificates/{id} | Actualiza estado de tramite | Si | Ciudadano |
-| GET | /me/export | Exporta guia personalizada en PDF | Si | Ciudadano |
-| GET | /admin/tickets | Lista tickets pendientes | Si | Admin |
-| PUT | /admin/tickets/{id} | Aprueba/rechaza ticket | Si | Admin |
-| POST | /admin/certificates | Crea certificado | Si | Admin |
-| PUT | /admin/certificates/{id} | Actualiza certificado | Si | Admin |
-| DELETE | /admin/certificates/{id} | Elimina certificado | Si | Admin |
-
-> Trazabilidad endpoint-RF: POST /query→RF-02,RF-03 | POST /extract→RF-04,RF-05,RF-06,RF-07 | GET /certificates→RF-01 | POST /tickets→RF-10,RF-11 | GET,PUT /me/*→RF-08,RF-09,RF-14 | */admin/*→RF-12 | Auth→RF-13.
-
-### 5.3 Componentes frontend (React)
-
-| Componente | Responsabilidad |
-|---|---|
-| `QueryAssistant` | Entrada en lenguaje natural y render de guia |
-| `DocumentUploader` | Carga de PDF/TXT/MD/JPG/PNG o texto pegado |
-| `CertificateList` | Lista de certificados con estado y obligatoriedad |
-| `CertificateDetail` | Requisitos, portal, tiempos y observaciones |
-| `UserDashboard` | Seguimiento personal y vencimientos |
-| `AdminPanel` | CRUD catalogo y gestion de tickets |
-| `TicketForm` | Solicitud de adicion con honeypot |
-| `ExportButton` | Generacion y descarga de PDF |
-
-### 5.4 Diagrama de modulos
-
-```mermaid
-flowchart TB
-  subgraph Frontend
-    QA[QueryAssistant\nlenguaje natural → guia]
-    DU[DocumentUploader\npdf.js + base64 en cliente]
-    CL[CertificateList / Detail\nresultado + metadata]
-    UD[UserDashboard\nestado personal]
-    AP[AdminPanel\nCRUD catalogo + tickets]
-    TF[TicketForm\nhoneypot incluido]
-  end
-
-  subgraph API["API Lambda (Python)"]
-    AM2[AuthMiddleware\nJWT + RBAC]
-    QH2[QueryHandler\nRAG sobre catalogo]
-    DX2[DocumentExtractor\nOpenAI Vision / GPT-4o]
-    TH2[TicketHandler\nrate limit 1/IP/24h]
-    AH2[AdminHandler\nCRUD + moderacion]
-    US2[UserStatusHandler\nestado tramites]
-  end
-
-  subgraph Infra["Infraestructura"]
-    DDB2[(DynamoDB\nCertificate / Ticket / Status / RateLimit)]
-    S3R[(S3 RAG\nconocimiento complementario)]
-    OAI2[OpenAI API\nGPT-4o + Vision]
-    COG2[Cognito\nJWT]
-  end
-
-  QA --> QH2
-  DU --> DX2
-  CL --> QH2
-  UD --> US2
-  AP --> AH2
-  TF --> TH2
-
-  AM2 --> QH2
-  AM2 --> DX2
-  AM2 --> TH2
-  AM2 --> AH2
-  AM2 --> US2
-
-  QH2 --> DDB2
-  QH2 --> S3R
-  QH2 --> OAI2
-  DX2 --> OAI2
-  DX2 --> DDB2
-  TH2 --> DDB2
-  AH2 --> DDB2
-  US2 --> DDB2
-  AM2 --> COG2
-```
-
-### 5.5 Prompts base para OpenAI
-
-**System prompt - Query Handler**
-
-```text
-Eres un asistente de orientacion sobre certificados y tramites en Colombia.
-Tu UNICA fuente de informacion es el catalogo suministrado en el contexto.
-NO inventes certificados, entidades ni requisitos fuera del catalogo.
-Si no existe informacion, responde que el tramite no esta en catalogo y
-sugiere usar el formulario de solicitud. Responde en espanol, breve y practico.
-```
-
-**System prompt - Document Extractor**
-
-```text
-Analiza el documento y extrae certificados o tramites mencionados o implicitos.
-Para cada item devuelve: nombre del certificado y entidad emisora probable.
-Devuelve SOLO un JSON array. No inventes elementos no soportados por el texto.
-```
-
-### 5.5 Seguridad
-
-| Aspecto | Implementacion |
-|---|---|
-| Autenticacion | JWT via Cognito con expiracion corta |
-| Autorizacion | Validacion de JWT en API Gateway y verificacion de rol en Lambda |
-| RBAC | Roles: publico, ciudadano, admin |
-| Rate limiting tickets | 1/IP/24h con DynamoDB TTL |
-| Rate limiting API | Throttling en API Gateway |
-| HTTPS | TLS obligatorio via CloudFront + ACM |
-| CORS | Restringido al dominio del frontend |
-| Validacion de entrada | Esquemas tipados (Pydantic) antes de ejecutar logica |
-| Carga de archivos | Limite 10MB, MIME y extension permitidos |
-| Privacidad documental | Extraccion de texto en el navegador (pdf.js); solo texto o base64 llega al API; ningun documento del usuario se almacena en servidor |
-| Logging | Sin PII en CloudWatch |
-| Anti-bot | Honeypot en formulario de tickets |
-| Baseline OWASP | OWASP Top 10 como lista de verificacion base |
-
-### 5.6 Principios de diseno de software
-
-| Principio | Aplicacion |
-|---|---|
-| Single Responsibility | Cada handler resuelve un proceso de negocio principal |
-| Dependency Inversion | Casos de uso desacoplados de SDKs mediante repositorios |
-| Open/Closed | Nuevos certificados se agregan al catalogo sin cambiar codigo |
-| Separation of Concerns | Presentacion, negocio, datos e IA separados |
-| Bajo acoplamiento | Frontend consume contratos API sin dependencia interna |
-| Alta cohesion | Cada modulo agrupa funciones de su flujo especifico |
-
-### 5.7 Pipeline CI/CD
-
-```text
-push -> main
-  |- lint (Flake8 + ESLint)
-  |- type check (mypy + tsc)
-  |- unit tests (pytest + Jest)
-  |- cdk synth
-  '- cdk deploy (solo si etapas previas pasan)
-```
-
-> El pipeline es auditable en `.github/workflows/`.
-
-### 5.8 Uso de IA generativa en esta entrega
-
-| Fase | Salida de la IA | Metodo de validacion | Estado |
-|---|---|---|---|
-| Fase 1 | Diagramas Mermaid (contexto, contenedores, secuencias, infraestructura) | Revisión manual de coherencia con procesos de seccion 1 | Validado |
-| Fase 2 | Propuesta de esquema DynamoDB y API REST | Revision de trazabilidad contra RF-01..RF-14 (seccion 3 completa) | Validado |
-| Fase 3 | Checklist inicial de seguridad | Contraste con RNF de privacidad, disponibilidad y seguridad | Validado |
+Consultar **sección 6 (Construcción)** para ver la implementación real y la API vigente.
 
 ---
 
@@ -631,6 +361,7 @@ push -> main
 - Frontend React + Vite con integracion a API real via `VITE_API_URL`.
 - Extraccion client-side de PDF e imagenes (pdf.js + Tesseract.js), sin enviar documentos originales al backend.
 - Seguridad base activa: JWT con expiracion de 60 minutos, CORS restringido por variable `FRONTEND_ORIGIN`, honeypot y rate limit en tickets.
+- Revision de amenazas con VirusTotal bajo demanda por fila (no bloquea carga de catalogo).
 
 ### 6.2 Dependencias y fuentes de verdad
 
@@ -683,21 +414,33 @@ npm run dev
 ### 6.6 Contrato de API
 
 - Base path: `/api/v1`
-- Endpoints publicos clave:
-  - `GET /api/v1/certificates`
-  - `GET /api/v1/certificates/{id}`
-  - `POST /api/v1/extract`
-  - `POST /api/v1/tickets`
-  - `POST /api/v1/auth/register`
-  - `POST /api/v1/auth/login`
+- Endpoints públicos clave:
+  - `GET /api/v1/certificates` — lista catálogo completo
+  - `GET /api/v1/certificates/{id}` — detalle de certificado
+  - `POST /api/v1/certificates/{id}/threat-check` — revision de amenaza por certificado (bajo demanda)
+  - `POST /api/v1/extract` — extracción de texto/base64 y matching
+  - `POST /api/v1/tickets` — crear solicitud de nuevo trámite (rate-limited 1/IP/24h)
+  - `POST /api/v1/auth/register` — registrar usuario
+  - `POST /api/v1/auth/login` — obtener JWT
 - Endpoints admin (requieren rol `admin`):
-  - `GET /api/v1/admin/tickets`
-  - `PUT /api/v1/admin/tickets/{id}`
-  - `POST /api/v1/admin/certificates`
-  - `PUT /api/v1/admin/certificates/{id}`
-  - `DELETE /api/v1/admin/certificates/{id}`
+  - `GET /api/v1/admin/tickets` — listar tickets pendientes
+  - `PUT /api/v1/admin/tickets/{id}` — aprobar/rechazar ticket
+  - `POST /api/v1/admin/certificates` — agregar certificado
+  - `PUT /api/v1/admin/certificates/{id}` — actualizar certificado
+  - `DELETE /api/v1/admin/certificates/{id}` — eliminar certificado
 
-Esquema de error comun:
+**Health check de portales (client-side):**
+
+Cada 10 minutos, el frontend ejecuta:
+
+```bash
+curl -I https://portal-oficial.gov.co
+# HEAD no-cors: respuesta opaca = "Funcionando"
+#            network error = "Sin acceso"
+# Timestamp visible: "Última consulta: HH:MM"
+```
+
+Esquema de error común:
 
 ```json
 {
@@ -708,6 +451,28 @@ Esquema de error comun:
   }
 }
 ```
+
+**Contrato de `threat-check`:**
+
+```json
+POST /api/v1/certificates/{id}/threat-check
+{
+  "portal_url": "https://portal-opcional.gov.co"
+}
+```
+
+- `portal_url` es opcional. Si llega en el body, se usa como prioridad; si no, se usa `portal_url` del certificado en BD.
+- Respuesta:
+
+```json
+{
+  "threat_level": "safe|suspicious|malicious|unavailable",
+  "note": "detalle",
+  "last_scan": "2026-04-17T18:01:26.403539Z"
+}
+```
+
+- `GET /api/v1/certificates` no consulta VirusTotal. La revision se hace solo por click en tabla (`Revisar amenazas`).
 
 ---
 
@@ -767,6 +532,27 @@ Resultados obtenidos (ejecución local 2026-04-14):
 
 - El pipeline de deploy no se ejecuta por cada push a `main`.
 - El deploy solo se dispara manualmente o por versionado con tags.
+
+### 7.6 Cobertura de rubrica Entrega 3
+
+| Criterio rubrica | Evidencia en repo | Estado |
+|---|---|---|
+| Calidad de codigo y estructura | `backend/app`, `frontend/src`, convenciones PEP8 + componentes por archivo | Cubierto |
+| Coherencia con diseno implementado | Secciones 4 y 6 del README + endpoints reales en FastAPI | Cubierto |
+| Control de versiones | Historial Git de rama activa + tareas en `tasks/` | Cubierto |
+| Gestion de dependencias y config | `backend/pyproject.toml`, `backend/uv.lock`, `frontend/package.json`, `docker-compose.yml`, `.env.example` | Cubierto |
+| Uso responsable de GenAI en implementacion | Evidencia en `.prompts/` y `.prompts/discusion/` | Cubierto |
+| Estrategia de pruebas | Seccion 7.2 | Cubierto |
+| Cobertura unitaria/integracion | `backend/tests`, `frontend` (vitest) documentado en 7.4 | Parcial |
+| Evidencia de ejecucion y resultados | Seccion 7.4 (pytest, vitest, flake8, eslint) | Cubierto |
+| Validacion de requisitos funcionales | Matriz de RF en seccion 3 + pruebas y checks manuales de flujo | Parcial |
+| Gestion de defectos | Ajustes registrados por tareas (`tasks/`) y discusiones (`.prompts/discusion/`) | Parcial |
+
+**Faltantes puntuales recomendados para cerrar Entrega 3 al 100%:**
+
+1. Adjuntar reporte de cobertura (pytest + vitest) en archivo versionado.
+2. Consolidar un documento corto de trazabilidad "RF -> prueba/chequeo" con evidencia de resultado.
+3. Registrar defectos corregidos en formato simple (id, causa, fix, fecha) para fortalecer criterio de QA.
 
 ---
 

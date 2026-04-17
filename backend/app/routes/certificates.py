@@ -1,13 +1,15 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db.database import get_db
 from app.models.certificate import Certificate
 from app.services.catalog import serialize_certificate
+from app.services.virustotal import extract_result, fetch_url_report
 
 router = APIRouter(prefix="/api/v1/certificates", tags=["certificates"])
 
@@ -31,6 +33,16 @@ class CertificateResponse(BaseModel):
 class CertificateListResponse(BaseModel):
     items: list[CertificateResponse]
     total: int
+
+
+class ThreatCheckResponse(BaseModel):
+    threat_level: str
+    note: Optional[str]
+    last_scan: Optional[datetime]
+
+
+class ThreatCheckRequest(BaseModel):
+    portal_url: Optional[str] = None
 
 
 def _purpose_match(cert: Certificate, purpose: str) -> bool:
@@ -60,6 +72,28 @@ def get_certificate(
     if not cert:
         raise HTTPException(status_code=404, detail="Certificado no encontrado")
     return CertificateResponse(**serialize_certificate(cert))
+
+
+@router.post("/{certificate_id}/threat-check", response_model=ThreatCheckResponse)
+def threat_check_certificate(
+    certificate_id: int,
+    payload: Optional[ThreatCheckRequest] = None,
+    db: Session = Depends(get_db),
+) -> ThreatCheckResponse:
+    cert = db.query(Certificate).filter(Certificate.id == certificate_id).first()
+    if not cert:
+        raise HTTPException(status_code=404, detail="Certificado no encontrado")
+    target_url = (payload.portal_url if payload else None) or cert.portal_url
+    if not target_url:
+        return ThreatCheckResponse(
+            threat_level="unavailable",
+            note="Certificado sin portal URL",
+            last_scan=datetime.now(timezone.utc),
+        )
+    report = fetch_url_report(target_url, settings.virustotal_api_key)
+    result = extract_result(report)
+    checked_at = datetime.now(timezone.utc)
+    return ThreatCheckResponse(**result, last_scan=checked_at)
 
 
 class CertificateCreateRequest(BaseModel):

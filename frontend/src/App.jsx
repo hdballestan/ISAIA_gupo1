@@ -10,11 +10,11 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Navigate to="/extract" replace />} />
           <Route path="/extract" element={<Extract />} />
           <Route path="/catalog" element={<Navigate to="/extract" replace />} />
           <Route path="/catalog/:id" element={<Navigate to="/extract" replace />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/administration" element={<Admin />} />
           <Route path="/login" element={<Login />} />
         </Route>
       </Routes>

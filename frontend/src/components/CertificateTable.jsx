@@ -1,12 +1,34 @@
 import { useState, useMemo } from 'react'
 
-function HealthDot({ status }) {
+const STATUS_LABEL = {
+  ok: 'Funcionando',
+  error: 'Sin acceso',
+  pending: 'Verificando...',
+}
+
+const THREAT_LABEL = {
+  idle: 'Sin revisar',
+  loading: 'Consultando...',
+  safe: 'Sin amenaza',
+  suspicious: 'Sospechoso',
+  malicious: 'Riesgo alto',
+  unavailable: 'No disponible',
+}
+
+function PortalStatus({ status }) {
   return (
-    <span
-      className={`cert-table__health cert-table__health--${status}`}
-      title={status === 'ok' ? 'Portal disponible' : status === 'error' ? 'Portal no disponible' : 'Verificando...'}
-    />
+    <span className={`cert-table__portal-status cert-table__portal-status--${status}`}>
+      {STATUS_LABEL[status] ?? 'Verificando...'}
+    </span>
   )
+}
+
+function formatLastChecked(date) {
+  if (!date) return 'Consultando portales...'
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  const time = date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+  return isToday ? `Portales consultados hoy a las ${time}` : `Portales consultados ayer a las ${time}`
 }
 
 function buildRows(certificates, matchedIds) {
@@ -15,7 +37,28 @@ function buildRows(certificates, matchedIds) {
   return [...matched, ...rest]
 }
 
-function CertificateTable({ certificates = [], matchedIds = new Set(), healthMap = {} }) {
+function ThreatStatus({ value }) {
+  const level = value?.threat_level || 'idle'
+  return (
+    <div>
+      <span className={`cert-table__threat cert-table__threat--${level}`}>
+        {THREAT_LABEL[level] || THREAT_LABEL.unavailable}
+      </span>
+      {value?.note && level !== 'loading' && (
+        <p className="cert-table__threat-note">{value.note}</p>
+      )}
+    </div>
+  )
+}
+
+function CertificateTable({
+  certificates = [],
+  matchedIds = new Set(),
+  healthMap = {},
+  lastChecked = null,
+  threatChecks = {},
+  onThreatReview,
+}) {
   const [search, setSearch] = useState('')
   const [filterPurpose, setFilterPurpose] = useState('')
 
@@ -39,6 +82,7 @@ function CertificateTable({ certificates = [], matchedIds = new Set(), healthMap
 
   return (
     <div>
+      <p className="cert-table__last-checked">{formatLastChecked(lastChecked)}</p>
       <div className="cert-table__controls">
         <input
           type="text"
@@ -68,29 +112,34 @@ function CertificateTable({ certificates = [], matchedIds = new Set(), healthMap
           <table className="cert-table">
             <thead>
               <tr>
-                <th>Estado</th>
                 <th>Certificado</th>
                 <th>Emisor</th>
                 <th>Tiempo est.</th>
                 <th>Portal</th>
-                <th>Health</th>
+                <th>Estado del portal</th>
+                <th>Revisar amenazas</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((cert) => {
                 const isMatch = matchedIds.has(cert.id)
                 const health = cert.portal_url ? (healthMap[cert.portal_url] || 'pending') : null
+                const threat = threatChecks[cert.id] || { threat_level: 'idle' }
+                const isLoadingThreat = threat.threat_level === 'loading'
+                const isReviewedThreat = !['idle', 'loading', 'unavailable'].includes(threat.threat_level)
                 return (
                   <tr
                     key={cert.id}
                     className={isMatch ? 'cert-table__row--match' : ''}
                   >
                     <td>
-                      {isMatch && (
-                        <span className="cert-table__match-badge">Encontrado</span>
-                      )}
+                      <div className="cert-table__name">
+                        <span>{cert.name}</span>
+                        {isMatch && (
+                          <span className="cert-table__match-badge">Encontrado</span>
+                        )}
+                      </div>
                     </td>
-                    <td>{cert.name}</td>
                     <td>{cert.issuer}</td>
                     <td>{cert.estimated_days ? `${cert.estimated_days} días` : '—'}</td>
                     <td>
@@ -106,7 +155,20 @@ function CertificateTable({ certificates = [], matchedIds = new Set(), healthMap
                       ) : '—'}
                     </td>
                     <td>
-                      {health ? <HealthDot status={health} /> : '—'}
+                      {health ? <PortalStatus status={health} /> : '—'}
+                    </td>
+                    <td>
+                      <div className="cert-table__threat-cell">
+                        <button
+                          type="button"
+                          className="btn btn--sm btn-secondary cert-table__threat-btn"
+                          onClick={() => onThreatReview && onThreatReview(cert.id, cert.portal_url)}
+                          disabled={isLoadingThreat || isReviewedThreat}
+                        >
+                          {isLoadingThreat ? 'Revisando...' : isReviewedThreat ? 'Revisado' : 'Revisar'}
+                        </button>
+                        <ThreatStatus value={threat} />
+                      </div>
                     </td>
                   </tr>
                 )

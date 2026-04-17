@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import DocumentUploader from '../components/DocumentUploader'
 import CertificateTable from '../components/CertificateTable'
-import { getCertificates } from '../services/api'
+import { getCertificates, reviewThreat } from '../services/api'
 import { checkCatalogHealth } from '../services/health'
 
 function ExtractSummary({ extracted, count }) {
@@ -20,26 +20,63 @@ function ExtractSummary({ extracted, count }) {
   )
 }
 
+const HEALTH_INTERVAL_MS = 10 * 60 * 1000
+
 function Extract() {
   const [catalog, setCatalog] = useState([])
   const [matchedIds, setMatchedIds] = useState(new Set())
   const [extracted, setExtracted] = useState(false)
   const [healthMap, setHealthMap] = useState({})
+  const [lastChecked, setLastChecked] = useState(null)
   const [catalogError, setCatalogError] = useState(null)
+  const [threatChecks, setThreatChecks] = useState({})
+
+  function runHealthCheck(items) {
+    checkCatalogHealth(items).then((map) => {
+      setHealthMap(map)
+      setLastChecked(new Date())
+    })
+  }
 
   useEffect(() => {
     getCertificates()
       .then((data) => {
         const items = data?.items || (Array.isArray(data) ? data : [])
         setCatalog(items)
-        checkCatalogHealth(items).then(setHealthMap)
+        runHealthCheck(items)
       })
       .catch((err) => setCatalogError(err.message))
   }, [])
 
+  useEffect(() => {
+    if (catalog.length === 0) return
+    const id = setInterval(() => runHealthCheck(catalog), HEALTH_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [catalog])
+
   const handleExtracted = (matches) => {
     setMatchedIds(new Set(matches.map((m) => m.id)))
     setExtracted(true)
+  }
+
+  async function handleThreatReview(certificateId, portalUrl) {
+    const previous = threatChecks[certificateId]
+    if (previous && !['idle', 'unavailable'].includes(previous.threat_level)) {
+      return
+    }
+    if (!portalUrl) {
+      setThreatChecks((prev) => ({
+        ...prev,
+        [certificateId]: { threat_level: 'unavailable', note: 'Certificado sin portal URL' },
+      }))
+      return
+    }
+    setThreatChecks((prev) => ({
+      ...prev,
+      [certificateId]: { threat_level: 'loading', note: 'Consultando...' },
+    }))
+    const result = await reviewThreat(certificateId, portalUrl)
+    setThreatChecks((prev) => ({ ...prev, [certificateId]: result }))
   }
 
   return (
@@ -52,7 +89,7 @@ function Extract() {
       <ExtractSummary extracted={extracted} count={matchedIds.size} />
 
       {catalogError && (
-        <p style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-md)' }}>
+        <p className="extract__catalog-error">
           No se pudo cargar el catálogo: {catalogError}
         </p>
       )}
@@ -61,6 +98,9 @@ function Extract() {
         certificates={catalog}
         matchedIds={matchedIds}
         healthMap={healthMap}
+        lastChecked={lastChecked}
+        threatChecks={threatChecks}
+        onThreatReview={handleThreatReview}
       />
     </div>
   )

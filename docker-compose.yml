@@ -21,6 +21,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+      - ./.env
     environment:
       DATABASE_URL: postgresql://certidoc:certidoc_dev@db:5432/certidoc
       JWT_SECRET: dev_secret_change_in_prod

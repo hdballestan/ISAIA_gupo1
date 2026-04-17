@@ -2,6 +2,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 COPY package.json ./
+COPY scripts/ scripts/
 RUN npm install --legacy-peer-deps
 
 ARG VITE_API_URL=/api/v1

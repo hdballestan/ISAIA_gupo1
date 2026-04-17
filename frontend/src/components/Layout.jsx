@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 
 function Layout() {
   return (
@@ -7,14 +7,9 @@ function Layout() {
         <div className="header-container">
           <div className="logo">
             <h1>CertiDoc</h1>
-            <p>Portal de Certificados Colombianos</p>
+            <p>Te orientamos para encontrar el certificado que necesitas.</p>
           </div>
-          <nav className="nav">
-            <Link to="/">Inicio</Link>
-            <Link to="/extract">Certificados</Link>
-            <Link to="/admin">Admin</Link>
-            <Link to="/login">Acceder</Link>
-          </nav>
+          <nav className="nav" />
         </div>
       </header>
 

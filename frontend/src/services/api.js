@@ -29,6 +29,21 @@ export function getCertificates() {
   return fetchWithRetry('/certificates')
 }
 
+export async function reviewThreat(certificateId, portalUrl) {
+  try {
+    return await apiFetch(`/certificates/${certificateId}/threat-check`, {
+      method: 'POST',
+      body: JSON.stringify({ portal_url: portalUrl }),
+    })
+  } catch {
+    return {
+      threat_level: 'unavailable',
+      note: 'No disponible',
+      last_scan: null,
+    }
+  }
+}
+
 export function getCertificateById(id) {
   return apiFetch(`/certificates/${id}`)
 }
