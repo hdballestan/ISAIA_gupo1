@@ -286,9 +286,9 @@ flowchart LR
   U -->|Browser| FE
   FE -->|HTTP REST| BE
   BE -->|SQL| DB
-
-  Note: pdf.js + Tesseract.js en navegador<br/>OCR client-side, sin enviar documentos
 ```
+
+**Nota:** pdf.js + Tesseract.js se ejecutan en el navegador. OCR client-side, sin enviar documentos al servidor.
 
 | Componente | Tecnología | Responsabilidad |
 |---|---|---|
