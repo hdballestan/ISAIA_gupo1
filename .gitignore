@@ -15,13 +15,16 @@ env/
 *.h5
 *.csv
 *.parquet
-data/
-models/
+/data/*
+!/data/catalog.json
+/models/
 notebooks/.ipynb_checkpoints/
 
 # Environment & secrets
 .env
 .env.*
+!.env.example
+!**/.env.example
 *.pem
 *.key
 credentials.json
@@ -42,3 +45,7 @@ dist/
 
 # CI/CD
 *.log
+
+# Tesseract assets (generados por postinstall)
+frontend/public/tesseract/
+frontend/public/pdf.worker.min.js
