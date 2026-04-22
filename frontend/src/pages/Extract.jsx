@@ -3,6 +3,7 @@ import DocumentUploader from '../components/DocumentUploader'
 import CertificateTable from '../components/CertificateTable'
 import { getCertificates, reviewThreat } from '../services/api'
 import { checkCatalogHealth } from '../services/health'
+import { getChecklist, toggleItem, clearChecklist } from '../services/checklist'
 
 function ExtractSummary({ extracted, count }) {
   if (!extracted) return null
@@ -25,11 +26,13 @@ const HEALTH_INTERVAL_MS = 10 * 60 * 1000
 function Extract() {
   const [catalog, setCatalog] = useState([])
   const [matchedIds, setMatchedIds] = useState(new Set())
+  const [unverifiedList, setUnverifiedList] = useState([])
   const [extracted, setExtracted] = useState(false)
   const [healthMap, setHealthMap] = useState({})
   const [lastChecked, setLastChecked] = useState(null)
   const [catalogError, setCatalogError] = useState(null)
   const [threatChecks, setThreatChecks] = useState({})
+  const [checklist, setChecklist] = useState(() => getChecklist())
 
   function runHealthCheck(items) {
     checkCatalogHealth(items).then((map) => {
@@ -54,9 +57,20 @@ function Extract() {
     return () => clearInterval(id)
   }, [catalog])
 
-  const handleExtracted = (matches) => {
-    setMatchedIds(new Set(matches.map((m) => m.id)))
+  const handleExtracted = ({ matched, unverified }) => {
+    setMatchedIds(new Set(matched.map((m) => m.id)))
+    setUnverifiedList(unverified)
     setExtracted(true)
+  }
+
+  function handleToggle(key) {
+    setChecklist(toggleItem(key))
+  }
+
+  function handleClearChecklist() {
+    if (window.confirm('¿Eliminar todo el progreso guardado?')) {
+      setChecklist(clearChecklist())
+    }
   }
 
   async function handleThreatReview(certificateId, portalUrl) {
@@ -79,6 +93,13 @@ function Extract() {
     setThreatChecks((prev) => ({ ...prev, [certificateId]: result }))
   }
 
+  const allKeys = [
+    ...catalog.map((c) => `cat:${c.id}`),
+    ...unverifiedList.map((u) => u.key),
+  ]
+  const doneCount = allKeys.filter((k) => checklist[k]).length
+  const totalItems = allKeys.length
+
   return (
     <div className="page-extract">
       <h2>CertiDoc</h2>
@@ -94,9 +115,29 @@ function Extract() {
         </p>
       )}
 
+      {totalItems > 0 && (
+        <div className="extract__checklist-header">
+          <span className="extract__checklist-counter">
+            {doneCount}/{totalItems} completados
+          </span>
+          {doneCount > 0 && (
+            <button
+              type="button"
+              className="btn btn--sm btn-secondary"
+              onClick={handleClearChecklist}
+            >
+              Limpiar progreso
+            </button>
+          )}
+        </div>
+      )}
+
       <CertificateTable
         certificates={catalog}
         matchedIds={matchedIds}
+        unverifiedList={unverifiedList}
+        checklist={checklist}
+        onToggle={handleToggle}
         healthMap={healthMap}
         lastChecked={lastChecked}
         threatChecks={threatChecks}

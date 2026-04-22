@@ -1,0 +1,45 @@
+warning: The `tool.uv.dev-dependencies` field (used in `pyproject.toml`) is deprecated and will be removed in a future release; use `dependency-groups.dev` instead
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\HeverBallesta\Documents\DevOps\ISAIA_gupo1\backend
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.13.0
+collected 6 items
+
+tests\test_api.py ....                                                   [ 66%]
+tests\test_matcher.py ..                                                 [100%]
+
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.12-final-0 _______________
+
+Name                           Stmts   Miss  Cover
+--------------------------------------------------
+app\__init__.py                    0      0   100%
+app\config.py                     11      0   100%
+app\db\__init__.py                 0      0   100%
+app\db\base.py                     3      0   100%
+app\db\database.py                18      0   100%
+app\db\seed.py                    44     17    61%
+app\main.py                       38      3    92%
+app\middleware\__init__.py         0      0   100%
+app\middleware\auth.py            46      4    91%
+app\middleware\rate_limit.py      19      1    95%
+app\models\__init__.py             0      0   100%
+app\models\certificate.py         22      0   100%
+app\models\ticket.py              21      0   100%
+app\models\user.py                11      0   100%
+app\routes\__init__.py             0      0   100%
+app\routes\admin.py               62     13    79%
+app\routes\auth.py                36      2    94%
+app\routes\certificates.py        88     18    80%
+app\routes\extract.py             19      4    79%
+app\routes\tickets.py             30      2    93%
+app\scripts\__init__.py            0      0   100%
+app\scripts\scan_all_urls.py      44     44     0%
+app\services\__init__.py           0      0   100%
+app\services\catalog.py            3      0   100%
+app\services\matcher.py           27      2    93%
+app\services\virustotal.py        66     53    20%
+--------------------------------------------------
+TOTAL                            608    163    73%
+============================= 6 passed in 36.58s ==============================

@@ -295,6 +295,29 @@
         "cotizante.*salud"
       ],
       "last_verified": "2026-04-01"
+    },
+    {
+      "name": "Certificado de Prueba Anti-Phishing [TEST]",
+      "issuer": "AMTSO — Anti-Malware Testing Standards Organization",
+      "purposes": ["prueba"],
+      "legal_basis": [],
+      "requirements": [],
+      "portal_url": "https://www.amtso.org/feature-settings-check-phishing-page/",
+      "portal_status": "disponible",
+      "portal_notes": "ENTRADA DE PRUEBA. URL oficial de AMTSO para validar motores anti-phishing. No usar en producción real.",
+      "estimated_days": 0,
+      "validity_days": null,
+      "is_mandatory_for_minors": false,
+      "practical_notes": [
+        "Esta entrada es exclusivamente para validar la detección de amenazas con VirusTotal",
+        "El portal es reportado como phishing por los motores de seguridad — comportamiento esperado",
+        "Eliminar esta entrada con DELETE FROM certificates WHERE issuer ILIKE '%AMTSO%' al finalizar la demo"
+      ],
+      "regex_patterns": [
+        "certificado.*prueba.*amtso",
+        "amtso.*phishing"
+      ],
+      "last_verified": "2026-04-21"
     }
   ]
 }

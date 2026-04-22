@@ -180,8 +180,8 @@ Los portales existentes responden principalmente "como tramito este certificado"
 | RF-04 | Permitir subida de archivos PDF, TXT y MD (≤10MB) para extraccion de certificados | Indispensable | Ciudadano | Extraccion exitosa de ≥1 certificado en documento de prueba |
 | RF-05 | Permitir subida de imagenes JPG y PNG (≤10MB) para extraccion mediante vision artificial | Indispensable | Ciudadano | Extraccion de ≥1 certificado en imagen legible de prueba |
 | RF-06 | Permitir pegar texto en panel para extraccion sin subir archivo | Indispensable | Ciudadano | Textarea funcional con misma logica de extraccion que RF-04 |
-| RF-07 | Mapear certificados extraidos contra catalogo y devolver guia orientativa | Indispensable | Sistema | Cada certificado extraido se cruza con catalogo; no encontrados se senalan |
-| RF-08 | Tablero personal donde el ciudadano marque estado de cada tramite (en tramite, obtenido, vencido) | Deseable | Ciudadano | Estado persiste entre sesiones; consultable en /me/certificates |
+| RF-07 | Mapear certificados extraidos contra catalogo y devolver guia orientativa. Menciones no catalogadas aparecen como lista "no verificable" sin link | Indispensable | Sistema | Certificados del catalogo se muestran con ficha completa; menciones no catalogadas se listan en seccion separada sin portal ni amenazas |
+| RF-08 | Checklist personal por certificado (catalogado y no catalogado) con persistencia en localStorage. Trade-off: persiste en el dispositivo pero no entre dispositivos | Deseable | Ciudadano | Checkbox por fila; estado persiste tras recargar; contador N/M completados visible; boton de limpieza disponible |
 | RF-09 | Alertas cuando un certificado obtenido se acerque a vencimiento | Deseable | Ciudadano | Alerta visible ≥7 dias antes de vencimiento |
 | RF-10 | Formulario publico para solicitar adicion de nuevos tramites al catalogo | Indispensable | Ciudadano | Ticket creado con estado pendiente verificable en base de datos |
 | RF-11 | Rate limiting de solicitudes de adicion: 1 por IP cada 24 horas, con honeypot anti-bot | Indispensable | Sistema | Segunda solicitud desde misma IP en <24h rechazada con HTTP 429 |
@@ -336,20 +336,185 @@ Resultado guardado en tabla con timestamp "Última consulta: HH:MM".
 | Simplicidad operativa | FastAPI + PostgreSQL = menos dependencias, debugging directo, escalabilidad lineal |
 | Seguridad por defecto | Rate limiting, JWT con expiracion, CORS restrictivo, validacion entrada con Pydantic |
 | Health checks periódicos | Cliente ejecuta HEAD requests cada 10 minutos a portales; timestamp visible → usuario sabe cuándo fue la última consulta |
+| Trazabilidad local del ciudadano | Checklist en localStorage (`certidoc.checklist`): cero backend, cero autenticación requerida. Trade-off: no sincroniza entre dispositivos, satisface el 80% del valor del RF-08 |
 
 ---
 
-## 5. Diseño Detallado del Software (DIFERIDO — Entrega 4)
+## 5. Diseño Detallado del Software (Entrega 2 - 8 abr)
 
-> **Estado:** Pendiente refactorización. El stack simplificado en Entrega 3 cambió significativamente el modelo de datos (DynamoDB → PostgreSQL), componentes (Lambda → FastAPI), y flujos (RAG → Regex). Esta sección será reescrita en Entrega 4 con:
-> - Modelo PostgreSQL actualizado (tablas `certificates`, `users`, `tickets`)
-> - API REST real implementada (endpoints actuales en sección 6.6)
-> - Componentes frontend reales (DocumentUploader, CertificateTable, AdminPanel, etc.)
-> - Ausencia de OpenAI (solo regex matching) y procesamiento 100% client-side
->
-> **Razón de diferimiento:** Alcance de tiempo en Entrega 3 priorizó funcionalidad sobre documentación detallada. El código es más simple que lo documentado aquí; una refactorización prematura sería imprecisa.
+Esta seccion cierra el diseno detallado con el estado real del codigo.
+La fuente tecnica usada fue la API FastAPI actual (misma estructura visible en
+`/docs`) y los componentes reales del frontend.
 
-Consultar **sección 6 (Construcción)** para ver la implementación real y la API vigente.
+### 5.1 Modelo de datos PostgreSQL real
+
+Mapa logico a tablas reales:
+
+| Modelo logico | Tabla real en BD |
+|---|---|
+| certificates | `certificates` |
+| users | `users` |
+| tickets | `ticket_requests` |
+| rate_limits | `rate_limit_entries` |
+
+Campos principales por tabla:
+
+| Tabla | Campos clave |
+|---|---|
+| `certificates` | `id`, `name`, `issuer`, `purposes`(JSON), `legal_basis`(JSON), `requirements`(JSON), `portal_url`, `estimated_days`, `validity_days`, `is_mandatory_for_minors`, `practical_notes`(JSON), `regex_patterns`(JSON), `last_verified`, `created_at`, `updated_at` |
+| `users` | `id`, `email`(unique), `hashed_password`, `role`, `created_at` |
+| `ticket_requests` | `id`, `description`, `submitter_ip`, `status`, `admin_notes`, `created_at`, `resolved_at` |
+| `rate_limit_entries` | `id`, `ip_address`, `endpoint`, `last_request`, `created_at` |
+
+Relaciones de uso:
+
+- `users` define autenticacion y roles.
+- `certificates` es la fuente de verdad del catalogo y del matcher.
+- `ticket_requests` gestiona moderacion ciudadana.
+- `rate_limit_entries` protege el endpoint de tickets (1 IP por 24h).
+
+### 5.2 Diagrama de componentes frontend actual
+
+```mermaid
+flowchart TD
+  U[Ciudadano]
+  L[Layout]
+  E[Extract page]
+  DU[DocumentUploader]
+  CT[CertificateTable]
+  TF[TicketForm]
+  AP[AdminPanel]
+  API[services/api.js]
+  OCR[services/ocr.js]
+  PDF[services/pdf.js]
+  HM[services/health.js]
+  MX[utils/matcher.js]
+
+  U --> L
+  L --> E
+  E --> DU
+  E --> CT
+  E --> TF
+  L --> AP
+
+  DU --> OCR
+  DU --> PDF
+  DU --> MX
+  E --> API
+  E --> HM
+  AP --> API
+  TF --> API
+  CT --> API
+```
+
+Responsabilidad de componentes solicitados:
+
+| Componente | Rol en el flujo |
+|---|---|
+| `DocumentUploader` | Recibe PDF/imagen/texto, extrae texto en cliente y ejecuta matching |
+| `CertificateTable` | Muestra catalogo, resultados encontrados, estado de portales y threat-check |
+| `AdminPanel` | Vista operativa para revisar tickets y administrar catalogo |
+| `TicketForm` | Captura solicitudes ciudadanas con honeypot y feedback |
+| `Layout` | Estructura global, contexto legal y contenedor de rutas |
+
+### 5.3 API REST completa (request/response)
+
+Base path: `/api/v1`
+
+| Endpoint | Request schema | Response schema |
+|---|---|---|
+| `GET /certificates` | Query opcional `purpose: str(3..50)` | `{ items: CertificateResponse[], total: int }` |
+| `GET /certificates/{certificate_id}` | Path `certificate_id: int` | `CertificateResponse` |
+| `POST /certificates/{certificate_id}/threat-check` | Body opcional `{ portal_url?: string }` | `{ threat_level: string, note: string\|null, last_scan: datetime\|null }` |
+| `POST /extract` | `{ text: string(1..300000) }` | `{ matches: object[], total: int }` |
+| `POST /tickets` | `{ description: string(10..5000), honeypot: string }` | `201: { id: int, status: string, message: string }` (si honeypot tiene valor, responde `200` con estado recibido) |
+| `POST /auth/register` | `{ email: string(5..255), password: string(8..128) }` | `{ access_token: string, token_type: string, role: string }` |
+| `POST /auth/login` | `{ email: string(5..255), password: string(8..128) }` | `{ access_token: string, token_type: string, role: string }` |
+| `GET /admin/tickets` | Header `Authorization: Bearer <token>` (rol admin) | `AdminTicketResponse[]` |
+| `PUT /admin/tickets/{ticket_id}` | `{ status: "pending\|approved\|rejected", admin_notes: string<=2000 }` | `AdminTicketResponse` |
+| `POST /admin/certificates` | `CertificateCreateRequest` | `CertificateResponse` |
+| `PUT /admin/certificates/{certificate_id}` | `CertificateCreateRequest` | `CertificateResponse` |
+| `DELETE /admin/certificates/{certificate_id}` | Path `certificate_id: int` | `{ status: "deleted" }` |
+
+`CertificateResponse` incluye los campos de catalogo: `id`, `name`, `issuer`,
+`purposes`, `legal_basis`, `requirements`, `portal_url`, `estimated_days`,
+`validity_days`, `is_mandatory_for_minors`, `practical_notes`,
+`regex_patterns`, `last_verified`.
+
+Contrato comun de error:
+
+```json
+{
+  "error": {
+    "code": "<status_code>",
+    "message": "mensaje",
+    "details": []
+  }
+}
+```
+
+### 5.4 Flujos principales con diagramas de secuencia
+
+Extraccion desde documento:
+
+```mermaid
+sequenceDiagram
+  participant C as Ciudadano
+  participant DU as DocumentUploader
+  participant S as OCR/PDF/Matcher cliente
+  participant BE as FastAPI
+  participant DB as PostgreSQL
+
+  C->>DU: Sube PDF, imagen o pega texto
+  DU->>S: Extraer texto y aplicar regex local
+  DU->>BE: GET /api/v1/certificates
+  BE->>DB: Consulta catalogo
+  DB-->>BE: Registros
+  BE-->>DU: items + total
+  S-->>DU: IDs encontrados
+  DU-->>C: Tabla con certificados encontrados
+```
+
+Threat-check bajo demanda:
+
+```mermaid
+sequenceDiagram
+  participant C as Ciudadano
+  participant CT as CertificateTable
+  participant BE as FastAPI
+  participant DB as PostgreSQL
+  participant VT as VirusTotal
+
+  C->>CT: Click en Revisar amenazas
+  CT->>BE: POST /api/v1/certificates/{id}/threat-check
+  BE->>DB: Lee portal_url si hace falta
+  DB-->>BE: URL objetivo
+  BE->>VT: Consulta de reputacion
+  VT-->>BE: Resultado o fallo
+  BE-->>CT: threat_level (safe, suspicious, malicious, unavailable)
+  CT-->>C: Estado visible en la fila
+```
+
+Creacion de ticket ciudadano:
+
+```mermaid
+sequenceDiagram
+  participant C as Ciudadano
+  participant TF as TicketForm
+  participant BE as FastAPI
+  participant RL as RateLimit
+  participant DB as PostgreSQL
+
+  C->>TF: Envia descripcion del tramite
+  TF->>BE: POST /api/v1/tickets
+  BE->>BE: Valida honeypot
+  BE->>RL: Verifica 1 IP por 24h
+  RL-->>BE: Permitido o 429
+  BE->>DB: Inserta ticket en ticket_requests
+  DB-->>BE: id y estado
+  BE-->>TF: Ticket creado
+  TF-->>C: Confirmacion en pantalla
+```
 
 ---
 
@@ -362,6 +527,7 @@ Consultar **sección 6 (Construcción)** para ver la implementación real y la A
 - Extraccion client-side de PDF e imagenes (pdf.js + Tesseract.js), sin enviar documentos originales al backend.
 - Seguridad base activa: JWT con expiracion de 60 minutos, CORS restringido por variable `FRONTEND_ORIGIN`, honeypot y rate limit en tickets.
 - Revision de amenazas con VirusTotal bajo demanda por fila (no bloquea carga de catalogo).
+- Extraccion dual: certificados del catalogo identificados por regex (ficha completa con portal y amenazas) + menciones no catalogadas listadas como "no verificable" (sin link ni verificacion de portal).
 
 ### 6.2 Dependencias y fuentes de verdad
 
@@ -558,13 +724,33 @@ Resultados obtenidos (ejecución local 2026-04-14):
 
 ## 8. Uso de IA Generativa (Entrega 4 - 22 abr)
 
-> Marcador de posicion. Se entregara el 22 de abril con: estrategias de prompt engineering, evidencia de razonamiento asistido, evaluacion critica y prompts completos usados en el proyecto.
+La IA se uso como herramienta de productividad con control humano estricto.
+Cada salida se valido con checklist manual por tarea (coherencia con rubrica,
+coherencia con codigo real y evidencia verificable antes de integrar).
+
+Este enfoque permitio acelerar documentacion, revision tecnica y deteccion de
+inconsistencias, sin delegar decisiones finales. Tambien confirmo que para
+pedir bien a la IA se necesita conocimiento del tema y del contexto del repo.
+
+Detalle completo en:
+
+- `docs/entrega_4/informe_genai.md`
+- `docs/entrega_4/prompts_catalogo.md`
+- `docs/entrega_4/evaluacion_critica.md`
 
 ---
 
 ## 9. Consideraciones Eticas (Entrega 4 - 22 abr)
 
-> Marcador de posicion. Se entregara el 22 de abril con: analisis de riesgos y sesgos, uso responsable de datos, cumplimiento normativo y estrategias de mitigacion.
+El proyecto asume una postura etica practica: usar IA donde aporta valor, con
+limites claros de privacidad, seguridad y trazabilidad. Se priorizo
+procesamiento client-side para proteger documentos (Ley 1581/2012), controles
+de seguridad base para reducir abuso (Ley 1273/2009) y mitigaciones explicitas
+de sesgo en el catalogo y en las reglas regex.
+
+Detalle completo en:
+
+- `docs/entrega_4/riesgos_y_etica.md`
 
 ---
 

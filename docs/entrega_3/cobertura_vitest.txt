@@ -1,0 +1,37 @@
+[2m5:10:21 p. m.[22m [33m[1m[vite][22m[39m [33mwarning: `esbuild` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `oxc` instead.[39m
+`optimizeDeps.rollupOptions` / `ssr.optimizeDeps.rollupOptions` is deprecated. Use `optimizeDeps.rolldownOptions` instead. Note that this option may be set by a plugin. Set VITE_DEPRECATION_TRACE=1 to see where it is called.
+[33mBoth esbuild and oxc options were set. oxc options will be used and esbuild options will be ignored.[39m The following esbuild options were set: `{ jsx: 'automatic', jsxImportSource: undefined }`
+[vite:react-babel] We recommend switching to `@vitejs/plugin-react-oxc` for improved performance. More information at https://vite.dev/rolldown
+Loaded  vitest@4.1.4  and  @vitest/coverage-v8@4.1.5 .
+Running mixed versions is not supported and may lead into bugs
+Update your dependencies and make sure the versions match.
+
+ RUN  v4.1.4 C:/Users/HeverBallesta/Documents/DevOps/ISAIA_gupo1/frontend
+      Coverage enabled with v8
+
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  17:10:23
+   Duration  11.68s (transform 4.85s, setup 0ms, import 10.27s, tests 947ms, environment 4ms)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   39.28 |    39.63 |   36.17 |   39.53 |                   
+ components        |   57.81 |    46.47 |      65 |      55 |                   
+  ...cateTable.jsx |   78.94 |    54.38 |      75 |   76.47 | 28-31,91-102,165  
+  TicketForm.jsx   |   26.92 |    14.28 |      25 |   26.92 | 12-36,49-63       
+ services          |    3.12 |    11.11 |       0 |    3.44 |                   
+  api.js           |    3.12 |    11.11 |       0 |    3.44 | 4-80              
+ utils             |   38.63 |     40.9 |   33.33 |    42.5 |                   
+  matcher.js       |   38.63 |     40.9 |   33.33 |    42.5 | 21,37,58-89       
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 39.28% ( 55/140 )
+Branches     : 39.63% ( 44/111 )
+Functions    : 36.17% ( 17/47 )
+Lines        : 39.53% ( 51/129 )
+================================================================================
