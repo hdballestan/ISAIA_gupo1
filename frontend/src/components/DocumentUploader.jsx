@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { extractImageText } from '../services/ocr'
 import { extractPdfText } from '../services/pdf'
-import { matchCertificates } from '../utils/matcher'
+import { matchDocument } from '../utils/matcher'
 
 const VALID_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'text/plain']
 const TYPE_BY_EXTENSION = {
@@ -66,8 +66,8 @@ function DocumentUploader({ catalog = [], onExtracted }) {
         setError('No se pudo extraer texto del archivo')
         return
       }
-      const matches = matchCertificates(text, catalog)
-      if (onExtracted) onExtracted(matches)
+      const result = matchDocument(text, catalog)
+      if (onExtracted) onExtracted(result)
     } catch (err) {
       setError(err.message || 'Error procesando archivo')
     } finally {

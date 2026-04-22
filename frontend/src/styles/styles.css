@@ -911,3 +911,118 @@ body {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-sm);
 }
+
+/* Mencionados sin validar */
+.cert-table__unverified {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background-color: rgba(183, 123, 24, 0.06);
+  border: var(--border-width) solid rgba(183, 123, 24, 0.3);
+  border-radius: var(--border-radius);
+}
+
+.cert-table__unverified-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+  margin-bottom: var(--spacing-xs);
+}
+
+.cert-table__unverified-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-md);
+}
+
+.cert-table__unverified-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.cert-table__unverified-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.cert-table__unverified-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.cert-table__unverified-badge {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+  background-color: rgba(183, 123, 24, 0.12);
+  border: var(--border-width) solid rgba(183, 123, 24, 0.3);
+  border-radius: var(--border-radius);
+  padding: 2px var(--spacing-sm);
+  white-space: nowrap;
+}
+
+.cert-table__unverified-item--done .cert-table__unverified-label {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* Checklist */
+.cert-table__th--check,
+.cert-table__td--check {
+  width: 36px;
+  text-align: center;
+}
+
+.cert-table__checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-accent);
+}
+
+.cert-table__row--done td {
+  opacity: 0.55;
+}
+
+.cert-table__row--done .cert-table__name span:first-child {
+  text-decoration: line-through;
+}
+
+/* Contador y botón de progreso */
+.extract__checklist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--spacing-md) 0 var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-secondary);
+  border-radius: var(--border-radius);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.extract__checklist-counter {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent);
+}
+
+/* Portal bloqueado por amenaza */
+.cert-table__portal-blocked {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error);
+}
+
+.cert-table__portal-blocked-msg {
+  font-size: 12px;
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-light);
+  max-width: 200px;
+  line-height: 1.3;
+}
