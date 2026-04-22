@@ -184,17 +184,20 @@ jobs:
              docker image prune -f"
 
       - name: Health check
-        if: ${{ secrets.DEPLOY_HEALTH_URL != '' }}
         env:
           HEALTH_URL: ${{ secrets.DEPLOY_HEALTH_URL }}
         run: |
+          if [ -z "$HEALTH_URL" ]; then
+            echo "DEPLOY_HEALTH_URL no configurado, omitiendo health check"
+            exit 0
+          fi
           for i in 1 2 3 4 5; do
             if curl -fsSL --max-time 10 "$HEALTH_URL" > /dev/null; then
-              echo "Health check passed on attempt $i"
+              echo "Health check OK en intento $i"
               exit 0
             fi
-            echo "Attempt $i failed, retrying..."
+            echo "Intento $i fallido, reintentando..."
             sleep 5
           done
-          echo "Health check failed after 5 attempts"
+          echo "Health check falló después de 5 intentos"
           exit 1
